@@ -273,47 +273,51 @@ export default function Dashboard() {
   }, [desde, hasta, cargarIngresos]); // Added cargarIngresos to the dependency array
 
   // Renderizado
-  return (
-    <main className="bg-gray-900 min-h-screen text-white">
-      {/* Barra de navegación */}
-      <nav className="bg-gray-800 p-4 flex justify-between items-center">
-        <div className="flex items-center">
+ // Renderizado - Return completo con mejoras de responsividad
+return (
+  <main className="bg-gray-900 min-h-screen text-white">
+    {/* Barra de navegación */}
+    <nav className="bg-gray-800 p-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center">
+        <div className="flex items-center mb-4 sm:mb-0">
           <DollarSign className="mr-2" size={24} />
           <h1 className="text-xl font-bold">Sistema de Ingresos</h1>
         </div>
-        <div className="flex space-x-4">
+        <div className="flex flex-wrap justify-center gap-2">
           <button
-            className={`px-4 py-2 rounded-lg ${vistaActual === 'dashboard' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+            className={`px-3 py-2 text-sm sm:text-base rounded-lg ${vistaActual === 'dashboard' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
             onClick={() => setVistaActual('dashboard')}
           >
             Dashboard
           </button>
           <button
-            className={`px-4 py-2 rounded-lg ${vistaActual === 'ingresos' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+            className={`px-3 py-2 text-sm sm:text-base rounded-lg ${vistaActual === 'ingresos' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
             onClick={() => setVistaActual('ingresos')}
           >
             Ver Ingresos
           </button>
           <button
-            className={`px-4 py-2 rounded-lg ${vistaActual === 'formulario' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
+            className={`px-3 py-2 text-sm sm:text-base rounded-lg ${vistaActual === 'formulario' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
             onClick={() => setVistaActual('formulario')}
           >
             Nuevo Ingreso
           </button>
         </div>
-      </nav>
+      </div>
+    </nav>
 
-      <div className="max-w-7xl mx-auto p-4">
-        {/* Filtros de fecha */}
-        <div className="bg-gray-800 p-4 rounded-lg mb-6 flex flex-wrap gap-4 items-center justify-between">
-          <div className="flex flex-wrap gap-4 items-center">
+    <div className="max-w-7xl mx-auto px-4 py-4">
+      {/* Filtros de fecha */}
+      <div className="bg-gray-800 p-4 rounded-lg mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between space-y-4 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex flex-col">
               <label className="text-sm text-gray-400">Desde</label>
               <input
                 type="date"
                 value={desde}
                 onChange={(e) => setDesde(e.target.value)}
-                className="bg-gray-700 p-2 rounded border border-gray-600 text-sm"
+                className="bg-gray-700 p-2 rounded border border-gray-600 text-sm w-full"
               />
             </div>
             <div className="flex flex-col">
@@ -322,307 +326,313 @@ export default function Dashboard() {
                 type="date"
                 value={hasta}
                 onChange={(e) => setHasta(e.target.value)}
-                className="bg-gray-700 p-2 rounded border border-gray-600 text-sm"
+                className="bg-gray-700 p-2 rounded border border-gray-600 text-sm w-full"
               />
             </div>
           </div>
           <button
-            className="bg-green-600 hover:bg-green-700 p-2 rounded flex items-center"
+            className="bg-green-600 hover:bg-green-700 p-2 rounded flex items-center justify-center sm:justify-start"
             onClick={exportarExcel}
           >
             <Download size={18} className="mr-2" />
             Exportar a Excel
           </button>
         </div>
+      </div>
 
-        {vistaActual === 'dashboard' && (
-          <div className="space-y-6">
-            {/* Tarjetas de estadísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gray-800 p-4 rounded-lg flex items-center">
-                <div className="rounded-full bg-blue-500 bg-opacity-20 p-3 mr-4">
-                  <DollarSign size={24} className="text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Ingresos Hoy</p>
-                  <p className="text-2xl font-bold">${estadisticas.totalHoy.toFixed(2)}</p>
-                </div>
+      {vistaActual === 'dashboard' && (
+        <div className="space-y-6">
+          {/* Tarjetas de estadísticas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-gray-800 p-4 rounded-lg flex items-center">
+              <div className="rounded-full bg-blue-500 bg-opacity-20 p-3 mr-4 flex-shrink-0">
+                <DollarSign size={24} className="text-blue-500" />
               </div>
-              
-              <div className="bg-gray-800 p-4 rounded-lg flex items-center">
-                <div className="rounded-full bg-green-500 bg-opacity-20 p-3 mr-4">
-                  <TrendingUp size={24} className="text-green-500" />
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Ingresos Semana</p>
-                  <p className="text-2xl font-bold">${estadisticas.totalSemana.toFixed(2)}</p>
-                </div>
-              </div>
-              
-              <div className="bg-gray-800 p-4 rounded-lg flex items-center">
-                <div className="rounded-full bg-purple-500 bg-opacity-20 p-3 mr-4">
-                  <ArrowUpCircle size={24} className="text-purple-500" />
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Ingresos Mes</p>
-                  <p className="text-2xl font-bold">${estadisticas.totalMes.toFixed(2)}</p>
-                </div>
-              </div>
-              
-              <div className="bg-gray-800 p-4 rounded-lg flex items-center">
-                <div className="rounded-full bg-orange-500 bg-opacity-20 p-3 mr-4">
-                  <Users size={24} className="text-orange-500" />
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Promedio Ingreso</p>
-                  <p className="text-2xl font-bold">${estadisticas.promedioIngreso.toFixed(2)}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Gráficos */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Gráfico de barras mensual */}
-              <div className="bg-gray-800 p-4 rounded-lg">
-                <h2 className="text-xl font-semibold mb-4">Ingresos por Mes</h2>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={datosPorMes}>
-                      <XAxis dataKey="mes" />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
-                        labelFormatter={(label) => `Mes: ${label}`}
-                      />
-                      <Legend />
-                      <Bar dataKey="contado" name="Contado" fill={COLORES.contado} />
-                      <Bar dataKey="tarjeta" name="Tarjeta" fill={COLORES.tarjeta} />
-                      <Bar dataKey="transferencia" name="Transferencia" fill={COLORES.transferencia} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Gráfico de líneas tendencia */}
-              <div className="bg-gray-800 p-4 rounded-lg">
-                <h2 className="text-xl font-semibold mb-4">Tendencia de Ingresos</h2>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={datosPorMes}>
-                      <XAxis dataKey="mes" />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
-                        labelFormatter={(label) => `Mes: ${label}`}
-                      />
-                      <Legend />
-                      <Line type="monotone" dataKey="total" name="Total" stroke="#ffffff" strokeWidth={2} />
-                      <Line type="monotone" dataKey="contado" name="Contado" stroke={COLORES.contado} />
-                      <Line type="monotone" dataKey="tarjeta" name="Tarjeta" stroke={COLORES.tarjeta} />
-                      <Line type="monotone" dataKey="transferencia" name="Transferencia" stroke={COLORES.transferencia} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* Gráficos adicionales */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Gráfico de pie por método de pago */}
-              <div className="bg-gray-800 p-4 rounded-lg">
-                <h2 className="text-xl font-semibold mb-4">Distribución por Método de Pago</h2>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={datosPorMetodo}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={100}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {datosPorMetodo.map((entry, index) => {
-                          const color = entry.name === 'contado' 
-                            ? COLORES.contado 
-                            : entry.name === 'tarjeta' 
-                              ? COLORES.tarjeta 
-                              : COLORES.transferencia;
-                          return <Cell key={`cell-${index}`} fill={color} />;
-                        })}
-                      </Pie>
-                      <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Resumen por caja */}
-              <div className="bg-gray-800 p-4 rounded-lg">
-                <h2 className="text-xl font-semibold mb-4">Resumen por Caja</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {datosPorCaja.map((item, index) => (
-                    <div key={item.caja} className="bg-gray-700 p-3 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium capitalize">{item.caja}</span>
-                        <span className="text-sm bg-gray-600 px-2 py-1 rounded">
-                          {item.porcentaje.toFixed(1)}%
-                        </span>
-                      </div>
-                      <p className="text-xl mt-2 font-bold">${item.total.toFixed(2)}</p>
-                      <div className="mt-2 bg-gray-600 rounded-full h-2">
-                        <div 
-                          className="h-full rounded-full" 
-                          style={{ 
-                            width: `${item.porcentaje}%`, 
-                            backgroundColor: COLORES.cajas[index % COLORES.cajas.length] 
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {vistaActual === 'ingresos' && (
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4">Listado de Ingresos</h2>
-            {ingresos.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs uppercase bg-gray-700">
-                    <tr>
-                      <th className="px-4 py-3">Fecha</th>
-                      <th className="px-4 py-3">Caja</th>
-                      <th className="px-4 py-3">Monto</th>
-                      <th className="px-4 py-3">Método</th>
-                      <th className="px-4 py-3">Notas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ingresos.map((ingreso) => (
-                      <tr key={ingreso.id} className="border-b border-gray-700 hover:bg-gray-700">
-                        <td className="px-4 py-3">{format(parseISO(ingreso.fecha), 'dd/MM/yyyy HH:mm')}</td>
-                        <td className="px-4 py-3 capitalize">{ingreso.caja}</td>
-                        <td className="px-4 py-3 font-medium">
-                          ${ingreso.monto.toFixed(2)}
-                          {ingreso.monto > UMBRAL_ALERTA && (
-                            <span className="ml-2 text-red-500">
-                              <AlertCircle size={16} className="inline" />
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 capitalize">{ingreso.metodo_pago}</td>
-                        <td className="px-4 py-3 text-gray-400">{ingreso.notas || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-center py-4 text-gray-400">No hay ingresos en el período seleccionado</p>
-            )}
-          </div>
-        )}
-
-        {vistaActual === 'formulario' && (
-          <div className="bg-gray-800 p-6 rounded-lg max-w-2xl mx-auto">
-            <h2 className="text-xl font-semibold mb-6">Registrar Nuevo Ingreso</h2>
-            
-            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Caja</label>
-                <select
-                  className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50"
-                  value={caja}
-                  onChange={(e) => {
-                    setCaja(e.target.value);
-                    setMetodo('');
-                  }}
-                >
-                  <option value="">Selecciona caja</option>
-                  {CAJAS.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
+                <p className="text-gray-400 text-sm">Ingresos Hoy</p>
+                <p className="text-xl sm:text-2xl font-bold">${estadisticas.totalHoy.toFixed(2)}</p>
+              </div>
+            </div>
+            
+            <div className="bg-gray-800 p-4 rounded-lg flex items-center">
+              <div className="rounded-full bg-green-500 bg-opacity-20 p-3 mr-4 flex-shrink-0">
+                <TrendingUp size={24} className="text-green-500" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Ingresos Semana</p>
+                <p className="text-xl sm:text-2xl font-bold">${estadisticas.totalSemana.toFixed(2)}</p>
+              </div>
+            </div>
+            
+            <div className="bg-gray-800 p-4 rounded-lg flex items-center">
+              <div className="rounded-full bg-purple-500 bg-opacity-20 p-3 mr-4 flex-shrink-0">
+                <ArrowUpCircle size={24} className="text-purple-500" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Ingresos Mes</p>
+                <p className="text-xl sm:text-2xl font-bold">${estadisticas.totalMes.toFixed(2)}</p>
+              </div>
+            </div>
+            
+            <div className="bg-gray-800 p-4 rounded-lg flex items-center">
+              <div className="rounded-full bg-orange-500 bg-opacity-20 p-3 mr-4 flex-shrink-0">
+                <Users size={24} className="text-orange-500" />
+              </div>
+              <div>
+                <p className="text-gray-400 text-sm">Promedio Ingreso</p>
+                <p className="text-xl sm:text-2xl font-bold">${estadisticas.promedioIngreso.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Gráficos */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico de barras mensual */}
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Ingresos por Mes</h2>
+              <div className="h-60 sm:h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={datosPorMes}>
+                    <XAxis dataKey="mes" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
+                      labelFormatter={(label) => `Mes: ${label}`}
+                    />
+                    <Legend />
+                    <Bar dataKey="contado" name="Contado" fill={COLORES.contado} />
+                    <Bar dataKey="tarjeta" name="Tarjeta" fill={COLORES.tarjeta} />
+                    <Bar dataKey="transferencia" name="Transferencia" fill={COLORES.transferencia} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Gráfico de líneas tendencia */}
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Tendencia de Ingresos</h2>
+              <div className="h-60 sm:h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={datosPorMes}>
+                    <XAxis dataKey="mes" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
+                      labelFormatter={(label) => `Mes: ${label}`}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="total" name="Total" stroke="#ffffff" strokeWidth={2} />
+                    <Line type="monotone" dataKey="contado" name="Contado" stroke={COLORES.contado} />
+                    <Line type="monotone" dataKey="tarjeta" name="Tarjeta" stroke={COLORES.tarjeta} />
+                    <Line type="monotone" dataKey="transferencia" name="Transferencia" stroke={COLORES.transferencia} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Gráficos adicionales */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico de pie por método de pago */}
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Distribución por Método de Pago</h2>
+              <div className="h-60 sm:h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={datosPorMetodo}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      innerRadius={0}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {datosPorMetodo.map((entry, index) => {
+                        const color = entry.name === 'contado' 
+                          ? COLORES.contado 
+                          : entry.name === 'tarjeta' 
+                            ? COLORES.tarjeta 
+                            : COLORES.transferencia;
+                        return <Cell key={`cell-${index}`} fill={color} />;
+                      })}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Resumen por caja */}
+            <div className="bg-gray-800 p-4 rounded-lg">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">Resumen por Caja</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {datosPorCaja.map((item, index) => (
+                  <div key={item.caja} className="bg-gray-700 p-3 rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium capitalize">{item.caja}</span>
+                      <span className="text-xs sm:text-sm bg-gray-600 px-2 py-1 rounded">
+                        {item.porcentaje.toFixed(1)}%
+                      </span>
+                    </div>
+                    <p className="text-lg sm:text-xl mt-2 font-bold">${item.total.toFixed(2)}</p>
+                    <div className="mt-2 bg-gray-600 rounded-full h-2">
+                      <div 
+                        className="h-full rounded-full" 
+                        style={{ 
+                          width: `${item.porcentaje}%`, 
+                          backgroundColor: COLORES.cajas[index % COLORES.cajas.length] 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {vistaActual === 'ingresos' && (
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Listado de Ingresos</h2>
+          {ingresos.length > 0 ? (
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="min-w-full text-sm text-left">
+                <thead className="text-xs uppercase bg-gray-700">
+                  <tr>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3">Fecha</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3">Caja</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3">Monto</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3">Método</th>
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">Notas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ingresos.map((ingreso) => (
+                    <tr key={ingreso.id} className="border-b border-gray-700 hover:bg-gray-700">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
+                        {format(parseISO(ingreso.fecha), 'dd/MM/yyyy HH:mm')}
+                      </td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 capitalize text-xs sm:text-sm">{ingreso.caja}</td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium text-xs sm:text-sm">
+                        ${ingreso.monto.toFixed(2)}
+                        {ingreso.monto > UMBRAL_ALERTA && (
+                          <span className="ml-1 text-red-500">
+                            <AlertCircle size={14} className="inline" />
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 capitalize text-xs sm:text-sm">{ingreso.metodo_pago}</td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-gray-400 hidden sm:table-cell text-xs sm:text-sm">
+                        {ingreso.notas || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-center py-4 text-gray-400">No hay ingresos en el período seleccionado</p>
+          )}
+        </div>
+      )}
+
+      {vistaActual === 'formulario' && (
+        <div className="bg-gray-800 p-4 sm:p-6 rounded-lg max-w-2xl mx-auto">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Registrar Nuevo Ingreso</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Caja</label>
+              <select
+                className="w-full p-2 sm:p-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50 text-sm sm:text-base"
+                value={caja}
+                onChange={(e) => {
+                  setCaja(e.target.value);
+                  setMetodo('');
+                }}
+              >
+                <option value="">Selecciona caja</option>
+                {CAJAS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Monto</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={monto}
+                  onChange={(e) => validarMonto(e.target.value)}
+                  className={`w-full p-2 sm:p-3 pl-8 bg-gray-700 rounded-lg border ${
+                    montoEsAlto ? 'border-red-500' : 'border-gray-600'
+                  } focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50 text-sm sm:text-base`}
+                />
+                {montoEsAlto && (
+                  <div className="mt-2 flex items-center text-red-500 text-xs sm:text-sm">
+                    <AlertCircle size={16} className="mr-1 flex-shrink-0" />
+                    <span>Monto inusualmente alto. Por favor verifique antes de guardar.</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Método de Pago</label>
+              <select
+                className="w-full p-2 sm:p-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50 text-sm sm:text-base"
+                value={metodo}
+                onChange={(e) => setMetodo(e.target.value)}
+                disabled={!caja}
+              >
+                <option value="">Selecciona método</option>
+                {caja &&
+                  METODOS_PAGO[caja].map((m) => (
+                    <option key={m} value={m}>
+                      {m}
                     </option>
                   ))}
-                </select>
-              </div>
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Monto</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-400">$</span>
-                  <input
-                    type="number"
-                    placeholder="0.00"
-                    value={monto}
-                    onChange={(e) => validarMonto(e.target.value)}
-                    className={`w-full p-3 pl-8 bg-gray-700 rounded-lg border ${
-                      montoEsAlto ? 'border-red-500' : 'border-gray-600'
-                    } focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50`}
-                  />
-                  {montoEsAlto && (
-                    <div className="mt-2 flex items-center text-red-500 text-sm">
-                      <AlertCircle size={16} className="mr-1" />
-                      Monto inusualmente alto. Por favor verifique antes de guardar.
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Notas (opcional)</label>
+              <textarea
+                placeholder="Ingrese notas adicionales..."
+                value={notas}
+                onChange={(e) => setNotas(e.target.value)}
+                className="w-full p-2 sm:p-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50 h-20 sm:h-24 text-sm sm:text-base"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Método de Pago</label>
-                <select
-                  className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50"
-                  value={metodo}
-                  onChange={(e) => setMetodo(e.target.value)}
-                  disabled={!caja}
-                >
-                  <option value="">Selecciona método</option>
-                  {caja &&
-                    METODOS_PAGO[caja].map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Notas (opcional)</label>
-                <textarea
-                  placeholder="Ingrese notas adicionales..."
-                  value={notas}
-                  onChange={(e) => setNotas(e.target.value)}
-                  className="w-full p-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50 h-24"
-                />
-              </div>
-
-              <div className="flex space-x-4 pt-4">
-                <button
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
-                  onClick={agregarIngreso}
-                >
-                  <DollarSign size={18} className="mr-2" />
-                  Guardar Ingreso
-                </button>
-                <button
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                  onClick={resetearFormulario}
-                >
-                  Limpiar
-                </button>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3 sm:space-x-4 pt-4">
+              <button
+                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
+                onClick={agregarIngreso}
+              >
+                <DollarSign size={18} className="mr-2" />
+                Guardar Ingreso
+              </button>
+              <button
+                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium transition-colors"
+                onClick={resetearFormulario}
+              >
+                Limpiar
+              </button>
             </div>
           </div>
-        )}
-      </div>
-    </main>
-  );
+        </div>
+      )}
+    </div>
+  </main>
+);
 }
