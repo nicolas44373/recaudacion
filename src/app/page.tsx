@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO, subDays } from 'date-fns';
-// Add a .eslintrc.json file to root project to disable specific ESLint rules
-// This is a comment for documentation, not actual code execution
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import {
@@ -33,7 +31,7 @@ const METODOS_PAGO: Record<string, string[]> = {
   colon: ['contado', 'transferencia', 'tarjeta'],
   'clientes grandes': ['contado', 'transferencia', 'tarjeta'],
 };
-const UMBRAL_ALERTA = 5000; // Montos mayores a esto mostrarán una alerta
+const UMBRAL_ALERTA = 50000000; // Montos mayores a esto mostrarán una alerta
 const COLORES = {
   contado: '#10b981',
   tarjeta: '#3b82f6',
@@ -272,8 +270,7 @@ export default function Dashboard() {
   // Efectos
   useEffect(() => {
     cargarIngresos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [desde, hasta]); 
+  }, [desde, hasta, cargarIngresos]); // Added cargarIngresos to the dependency array
 
   // Renderizado
   return (
