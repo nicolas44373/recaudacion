@@ -272,7 +272,8 @@ export default function Dashboard() {
   // Efectos
   useEffect(() => {
     cargarIngresos();
-  }, [desde, hasta]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [desde, hasta]); 
 
   // Renderizado
   return (
