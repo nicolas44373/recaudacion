@@ -594,7 +594,7 @@ return (
                 onChange={(e) => setMetodo(e.target.value)}
                 disabled={!caja}
               >
-                <option value="">Selecciona método</option>
+                <option value="">Selecciona metodo</option>
                 {caja &&
                   METODOS_PAGO[caja].map((m) => (
                     <option key={m} value={m}>
