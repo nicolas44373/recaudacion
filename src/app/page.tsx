@@ -1,638 +1,139 @@
+// src/app/dashboard/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { format, parseISO, subDays } from 'date-fns';
-import { saveAs } from 'file-saver';
-import * as XLSX from 'xlsx';
+import { format, subDays } from 'date-fns';
+import NavigationBar from '@/components/NavigationBar';
+import FiltroFechaExportar from '@/components/FiltroFechaExportar';
+import DashboardStats from '@/components/DashboardStats';
+import BarChartMensual from '@/components/BarChartMensual';
+import LineChartTendencia from '@/components/LineChartTendencia';
+import PieChartMetodoPago from '@/components/PieChartMetodoPago';
+import ResumenPorCaja from '@/components/ResumenPorCaja';
+import IngresoTable from '@/components/IngresoTable';
+import IngresoForm from '@/components/IngresoForm';
+import GastoTable from '@/components/GastoTable';
+import GastoForm from '@/components/GastoForm';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-} from 'recharts';
-import { AlertCircle, ArrowUpCircle, Download, DollarSign, TrendingUp, Users } from 'lucide-react';
+  prepararDatosPorCaja,
+  prepararDatosPorMes,
+  prepararDatosPorMetodo,
+} from '@/components/helpers';
 
-// Constantes
-const CAJAS = ['pia', 'claudio', 'flor', 'nacho', 'colon', 'clientes grandes'];
-const METODOS_PAGO: Record<string, string[]> = {
-  pia: ['contado', 'tarjeta'],
-  claudio: ['contado', 'tarjeta'],
-  flor: ['contado', 'transferencia', 'tarjeta'],
-  nacho: ['contado', 'transferencia'],
-  colon: ['contado', 'transferencia', 'tarjeta'],
-  'clientes grandes': ['contado', 'transferencia', 'tarjeta'],
-};
-const UMBRAL_ALERTA = 50000000; // Montos mayores a esto mostrarán una alerta
-const COLORES = {
-  contado: '#10b981',
-  tarjeta: '#3b82f6',
-  transferencia: '#f59e0b',
-  cajas: ['#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1']
-};
-
-// Tipos
-type Ingreso = {
-  id: string;
-  caja: string;
-  monto: number;
-  metodo_pago: string;
-  fecha: string;
-  notas?: string;
-};
-
-type ResumenCaja = {
-  caja: string;
-  total: number;
-  porcentaje: number;
-};
-
-type EstadisticasGenerales = {
-  totalHoy: number;
-  totalMes: number;
-  totalSemana: number;
-  totalIngresos: number;
-  promedioIngreso: number;
-};
-
-export default function Dashboard() {
-  // Estados
-  const [caja, setCaja] = useState('');
-  const [monto, setMonto] = useState('');
-  const [metodo, setMetodo] = useState('');
-  const [notas, setNotas] = useState('');
-  const [desde, setDesde] = useState(() => {
-    const fechaInicio = subDays(new Date(), 30);
-    return format(fechaInicio, 'yyyy-MM-dd');
-  });
+export default function DashboardPage() {
+  const [vistaActual, setVistaActual] = useState<'dashboard' | 'ingresos' | 'formulario' | 'gastos' | 'nuevo-gasto'>('dashboard');
+  const [desde, setDesde] = useState(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [hasta, setHasta] = useState(() => format(new Date(), 'yyyy-MM-dd'));
-  const [ingresos, setIngresos] = useState<Ingreso[]>([]);
-  const [montoEsAlto, setMontoEsAlto] = useState(false);
-  const [vistaActual, setVistaActual] = useState<'dashboard' | 'ingresos' | 'formulario'>('dashboard');
-  const [estadisticas, setEstadisticas] = useState<EstadisticasGenerales>({
+  const [ingresos, setIngresos] = useState<any[]>([]);
+  const [gastos, setGastos] = useState<any[]>([]);
+  const [estadisticas, setEstadisticas] = useState({
     totalHoy: 0,
     totalMes: 0,
     totalSemana: 0,
     totalIngresos: 0,
-    promedioIngreso: 0
+    promedioIngreso: 0,
+    totalGastosMes: 0,
   });
 
-  // Funciones
   const cargarIngresos = async () => {
     let query = supabase.from('ingresos').select('*');
-
     if (desde) query = query.gte('fecha', desde);
     if (hasta) query = query.lte('fecha', hasta + 'T23:59:59');
-
     const { data } = await query.order('fecha', { ascending: false });
-    if (data) setIngresos(data);
-    calcularEstadisticas(data || []);
+    if (data) {
+      setIngresos(data);
+      calcularEstadisticas(data, gastos);
+    }
   };
 
-  const calcularEstadisticas = (data: Ingreso[]) => {
+  const cargarGastos = async () => {
+    let query = supabase.from('gastos').select('*');
+    if (desde) query = query.gte('fecha', desde);
+    if (hasta) query = query.lte('fecha', hasta + 'T23:59:59');
+    const { data } = await query.order('fecha', { ascending: false });
+    if (data) {
+      setGastos(data);
+      calcularEstadisticas(ingresos, data);
+    }
+  };
+
+  const calcularEstadisticas = (ingresosData: any[], gastosData: any[]) => {
     const hoy = format(new Date(), 'yyyy-MM-dd');
     const inicioSemana = format(subDays(new Date(), 7), 'yyyy-MM-dd');
     const inicioMes = format(new Date(), 'yyyy-MM-01');
 
-    const totalHoy = data
-      .filter(ingreso => ingreso.fecha.startsWith(hoy))
-      .reduce((sum, ingreso) => sum + ingreso.monto, 0);
+    const totalHoy = ingresosData.filter((ing) => ing.fecha.startsWith(hoy)).reduce((sum, ing) => sum + ing.monto, 0);
+    const totalSemana = ingresosData.filter((ing) => ing.fecha >= inicioSemana).reduce((sum, ing) => sum + ing.monto, 0);
+    const totalMes = ingresosData.filter((ing) => ing.fecha >= inicioMes).reduce((sum, ing) => sum + ing.monto, 0);
+    const totalIngresos = ingresosData.length;
+    const promedioIngreso = totalIngresos > 0 ? ingresosData.reduce((sum, ing) => sum + ing.monto, 0) / totalIngresos : 0;
 
-    const totalSemana = data
-      .filter(ingreso => ingreso.fecha >= inicioSemana)
-      .reduce((sum, ingreso) => sum + ingreso.monto, 0);
+    const totalGastosMes = gastosData.filter((g) => g.fecha >= inicioMes).reduce((sum, g) => sum + g.monto, 0);
 
-    const totalMes = data
-      .filter(ingreso => ingreso.fecha >= inicioMes)
-      .reduce((sum, ingreso) => sum + ingreso.monto, 0);
-
-    const totalIngresos = data.length;
-    const promedioIngreso = totalIngresos > 0 
-      ? data.reduce((sum, ingreso) => sum + ingreso.monto, 0) / totalIngresos 
-      : 0;
-
-    setEstadisticas({
-      totalHoy,
-      totalMes,
-      totalSemana,
-      totalIngresos,
-      promedioIngreso
-    });
+    setEstadisticas({ totalHoy, totalMes, totalSemana, totalIngresos, promedioIngreso, totalGastosMes });
   };
 
-  const validarMonto = (valor: string) => {
-    setMonto(valor);
-    setMontoEsAlto(parseFloat(valor) > UMBRAL_ALERTA);
-  };
-
-  const agregarIngreso = async () => {
-    // Validaciones
-    if (!caja) return alert('Selecciona una caja');
-    if (!monto || parseFloat(monto) <= 0) return alert('Ingresa un monto válido');
-    if (!metodo) return alert('Selecciona un método de pago');
-
-    // Confirmación para montos altos
-    if (montoEsAlto) {
-      const confirmar = window.confirm(`El monto $${monto} es muy alto. ¿Está seguro que desea continuar?`);
-      if (!confirmar) return;
-    }
-
-    const { error } = await supabase.from('ingresos').insert({
-      caja,
-      monto: parseFloat(monto),
-      metodo_pago: metodo,
-      notas: notas || null
-    });
-
-    if (!error) {
-      resetearFormulario();
-      cargarIngresos();
-      alert('Ingreso guardado correctamente');
-      setVistaActual('dashboard');
-    } else {
-      alert(`Error: ${error.message}`);
-    }
-  };
-
-  const resetearFormulario = () => {
-    setCaja('');
-    setMonto('');
-    setMetodo('');
-    setNotas('');
-    setMontoEsAlto(false);
-  };
-
-  const exportarExcel = () => {
-    if (ingresos.length === 0) {
-      return alert('No hay datos para exportar');
-    }
-    
-    // Formato para Excel
-    const datosExcel = ingresos.map(ingreso => ({
-      Caja: ingreso.caja,
-      Monto: ingreso.monto,
-      'Método de Pago': ingreso.metodo_pago,
-      Fecha: format(parseISO(ingreso.fecha), 'dd/MM/yyyy HH:mm'),
-      Notas: ingreso.notas || ''
-    }));
-    
-    const ws = XLSX.utils.json_to_sheet(datosExcel);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Ingresos');
-    
-    // Ajustar ancho de columnas
-    const colWidths = [
-      { wch: 15 }, // Caja
-      { wch: 12 }, // Monto
-      { wch: 15 }, // Método de Pago
-      { wch: 20 }, // Fecha
-      { wch: 30 }, // Notas
-    ];
-    ws['!cols'] = colWidths;
-    
-    const blob = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    saveAs(new Blob([blob]), `ingresos_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
-  };
-
-  // Preparar datos para gráficos
-  const prepararDatosPorMes = () => {
-    type MesData = {
-      mes: string;
-      total: number;
-      contado: number;
-      tarjeta: number;
-      transferencia: number;
-      [key: string]: number | string;
-    };
-
-    const datosPorMes = ingresos.reduce((acc, ingreso) => {
-      const mes = format(parseISO(ingreso.fecha), 'yyyy-MM');
-      if (!acc[mes]) acc[mes] = { mes, total: 0, contado: 0, tarjeta: 0, transferencia: 0 };
-      acc[mes].total += ingreso.monto;
-      
-      // Asegurarse de que el método de pago existe como propiedad numérica antes de sumarlo
-      if (!acc[mes][ingreso.metodo_pago] && ingreso.metodo_pago !== 'mes') {
-        acc[mes][ingreso.metodo_pago] = 0;
-      }
-      
-      // Solo actualizar si es un número
-      if (typeof acc[mes][ingreso.metodo_pago] === 'number') {
-        acc[mes][ingreso.metodo_pago] = (acc[mes][ingreso.metodo_pago] as number) + ingreso.monto;
-      }
-      
-      return acc;
-    }, {} as Record<string, MesData>);
-
-    return Object.values(datosPorMes).sort((a, b) => a.mes.localeCompare(b.mes));
-  };
-
-  const prepararDatosPorCaja = (): ResumenCaja[] => {
-    const totalesPorCaja = ingresos.reduce((acc, ingreso) => {
-      if (!acc[ingreso.caja]) acc[ingreso.caja] = 0;
-      acc[ingreso.caja] = (acc[ingreso.caja] as number) + ingreso.monto;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const totalGeneral = Object.values(totalesPorCaja).reduce((sum, valor) => sum + valor, 0);
-
-    return Object.entries(totalesPorCaja).map(([caja, total]) => ({
-      caja,
-      total,
-      porcentaje: totalGeneral > 0 ? (total / totalGeneral) * 100 : 0
-    }));
-  };
-
-  const prepararDatosPorMetodo = () => {
-    const totalesPorMetodo = ingresos.reduce((acc, ingreso) => {
-      if (!acc[ingreso.metodo_pago]) acc[ingreso.metodo_pago] = 0;
-      acc[ingreso.metodo_pago] = (acc[ingreso.metodo_pago] as number) + ingreso.monto;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(totalesPorMetodo).map(([metodo, valor]) => ({
-      name: metodo,
-      value: valor
-    }));
-  };
-
-  const datosPorMes = prepararDatosPorMes();
-  const datosPorCaja = prepararDatosPorCaja();
-  const datosPorMetodo = prepararDatosPorMetodo();
-
-  // Efectos
   useEffect(() => {
     cargarIngresos();
-  }, [desde, hasta, cargarIngresos]); // Added cargarIngresos to the dependency array
+    cargarGastos();
+  }, [desde, hasta]);
 
-  // Renderizado
- // Renderizado - Return completo con mejoras de responsividad
-return (
-  <main className="bg-gray-900 min-h-screen text-white">
-    {/* Barra de navegación */}
-    <nav className="bg-gray-800 p-4">
-      <div className="flex flex-col sm:flex-row justify-between items-center">
-        <div className="flex items-center mb-4 sm:mb-0">
-          <DollarSign className="mr-2" size={24} />
-          <h1 className="text-xl font-bold">Sistema de Ingresos</h1>
-        </div>
-        <div className="flex flex-wrap justify-center gap-2">
-          <button
-            className={`px-3 py-2 text-sm sm:text-base rounded-lg ${vistaActual === 'dashboard' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
-            onClick={() => setVistaActual('dashboard')}
-          >
-            Dashboard
-          </button>
-          <button
-            className={`px-3 py-2 text-sm sm:text-base rounded-lg ${vistaActual === 'ingresos' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
-            onClick={() => setVistaActual('ingresos')}
-          >
-            Ver Ingresos
-          </button>
-          <button
-            className={`px-3 py-2 text-sm sm:text-base rounded-lg ${vistaActual === 'formulario' ? 'bg-red-600' : 'bg-gray-700 hover:bg-gray-600'}`}
-            onClick={() => setVistaActual('formulario')}
-          >
-            Nuevo Ingreso
-          </button>
-        </div>
+  const movimientosConTipo = [
+    ...ingresos.map((i) => ({ ...i, tipo: 'ingreso' })),
+    ...gastos.map((g) => ({ ...g, tipo: 'gasto' })),
+  ];
+
+  const datosPorMes = prepararDatosPorMes(ingresos);
+  const datosPorCaja = prepararDatosPorCaja(movimientosConTipo);
+  const datosPorMetodo = prepararDatosPorMetodo(ingresos);
+
+  return (
+    <main className="bg-gray-900 min-h-screen text-white">
+      <NavigationBar vistaActual={vistaActual} setVistaActual={setVistaActual} />
+      <div className="max-w-7xl mx-auto px-4 py-4 space-y-8">
+        <FiltroFechaExportar
+          desde={desde}
+          hasta={hasta}
+          setDesde={setDesde}
+          setHasta={setHasta}
+          ingresos={ingresos}
+        />
+
+        {vistaActual === 'dashboard' && (
+          <>
+            <div className="mb-8">
+              <DashboardStats estadisticas={estadisticas} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BarChartMensual datos={datosPorMes} />
+              <LineChartTendencia datos={datosPorMes} />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <PieChartMetodoPago datos={datosPorMetodo} />
+              <ResumenPorCaja datos={datosPorCaja} />
+            </div>
+          </>
+        )}
+
+        {vistaActual === 'ingresos' && (
+          <IngresoTable ingresos={ingresos} />
+        )}
+
+        {vistaActual === 'formulario' && (
+          <IngresoForm onSuccess={cargarIngresos} />
+        )}
+
+        {vistaActual === 'gastos' && (
+          <GastoTable gastos={gastos} />
+        )}
+
+        {vistaActual === 'nuevo-gasto' && (
+          <GastoForm onSuccess={cargarGastos} />
+        )}
       </div>
-    </nav>
-
-    <div className="max-w-7xl mx-auto px-4 py-4">
-      {/* Filtros de fecha */}
-      <div className="bg-gray-800 p-4 rounded-lg mb-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between space-y-4 sm:space-y-0">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex flex-col">
-              <label className="text-sm text-gray-400">Desde</label>
-              <input
-                type="date"
-                value={desde}
-                onChange={(e) => setDesde(e.target.value)}
-                className="bg-gray-700 p-2 rounded border border-gray-600 text-sm w-full"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-sm text-gray-400">Hasta</label>
-              <input
-                type="date"
-                value={hasta}
-                onChange={(e) => setHasta(e.target.value)}
-                className="bg-gray-700 p-2 rounded border border-gray-600 text-sm w-full"
-              />
-            </div>
-          </div>
-          <button
-            className="bg-green-600 hover:bg-green-700 p-2 rounded flex items-center justify-center sm:justify-start"
-            onClick={exportarExcel}
-          >
-            <Download size={18} className="mr-2" />
-            Exportar a Excel
-          </button>
-        </div>
-      </div>
-
-      {vistaActual === 'dashboard' && (
-        <div className="space-y-6">
-          {/* Tarjetas de estadísticas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gray-800 p-4 rounded-lg flex items-center">
-              <div className="rounded-full bg-blue-500 bg-opacity-20 p-3 mr-4 flex-shrink-0">
-                <DollarSign size={24} className="text-blue-500" />
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Ingresos Hoy</p>
-                <p className="text-xl sm:text-2xl font-bold">${estadisticas.totalHoy.toFixed(2)}</p>
-              </div>
-            </div>
-            
-            <div className="bg-gray-800 p-4 rounded-lg flex items-center">
-              <div className="rounded-full bg-green-500 bg-opacity-20 p-3 mr-4 flex-shrink-0">
-                <TrendingUp size={24} className="text-green-500" />
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Ingresos Semana</p>
-                <p className="text-xl sm:text-2xl font-bold">${estadisticas.totalSemana.toFixed(2)}</p>
-              </div>
-            </div>
-            
-            <div className="bg-gray-800 p-4 rounded-lg flex items-center">
-              <div className="rounded-full bg-purple-500 bg-opacity-20 p-3 mr-4 flex-shrink-0">
-                <ArrowUpCircle size={24} className="text-purple-500" />
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Ingresos Mes</p>
-                <p className="text-xl sm:text-2xl font-bold">${estadisticas.totalMes.toFixed(2)}</p>
-              </div>
-            </div>
-            
-            <div className="bg-gray-800 p-4 rounded-lg flex items-center">
-              <div className="rounded-full bg-orange-500 bg-opacity-20 p-3 mr-4 flex-shrink-0">
-                <Users size={24} className="text-orange-500" />
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Promedio Ingreso</p>
-                <p className="text-xl sm:text-2xl font-bold">${estadisticas.promedioIngreso.toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Gráficos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Gráfico de barras mensual */}
-            <div className="bg-gray-800 p-4 rounded-lg">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">Ingresos por Mes</h2>
-              <div className="h-60 sm:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={datosPorMes}>
-                    <XAxis dataKey="mes" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
-                      labelFormatter={(label) => `Mes: ${label}`}
-                    />
-                    <Legend />
-                    <Bar dataKey="contado" name="Contado" fill={COLORES.contado} />
-                    <Bar dataKey="tarjeta" name="Tarjeta" fill={COLORES.tarjeta} />
-                    <Bar dataKey="transferencia" name="Transferencia" fill={COLORES.transferencia} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Gráfico de líneas tendencia */}
-            <div className="bg-gray-800 p-4 rounded-lg">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">Tendencia de Ingresos</h2>
-              <div className="h-60 sm:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={datosPorMes}>
-                    <XAxis dataKey="mes" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value: number) => [`$${value.toFixed(2)}`, '']}
-                      labelFormatter={(label) => `Mes: ${label}`}
-                    />
-                    <Legend />
-                    <Line type="monotone" dataKey="total" name="Total" stroke="#ffffff" strokeWidth={2} />
-                    <Line type="monotone" dataKey="contado" name="Contado" stroke={COLORES.contado} />
-                    <Line type="monotone" dataKey="tarjeta" name="Tarjeta" stroke={COLORES.tarjeta} />
-                    <Line type="monotone" dataKey="transferencia" name="Transferencia" stroke={COLORES.transferencia} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          {/* Gráficos adicionales */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Gráfico de pie por método de pago */}
-            <div className="bg-gray-800 p-4 rounded-lg">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">Distribución por Método de Pago</h2>
-              <div className="h-60 sm:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={datosPorMetodo}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      innerRadius={0}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {datosPorMetodo.map((entry, index) => {
-                        const color = entry.name === 'contado' 
-                          ? COLORES.contado 
-                          : entry.name === 'tarjeta' 
-                            ? COLORES.tarjeta 
-                            : COLORES.transferencia;
-                        return <Cell key={`cell-${index}`} fill={color} />;
-                      })}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Resumen por caja */}
-            <div className="bg-gray-800 p-4 rounded-lg">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">Resumen por Caja</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {datosPorCaja.map((item, index) => (
-                  <div key={item.caja} className="bg-gray-700 p-3 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium capitalize">{item.caja}</span>
-                      <span className="text-xs sm:text-sm bg-gray-600 px-2 py-1 rounded">
-                        {item.porcentaje.toFixed(1)}%
-                      </span>
-                    </div>
-                    <p className="text-lg sm:text-xl mt-2 font-bold">${item.total.toFixed(2)}</p>
-                    <div className="mt-2 bg-gray-600 rounded-full h-2">
-                      <div 
-                        className="h-full rounded-full" 
-                        style={{ 
-                          width: `${item.porcentaje}%`, 
-                          backgroundColor: COLORES.cajas[index % COLORES.cajas.length] 
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {vistaActual === 'ingresos' && (
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4">Listado de Ingresos</h2>
-          {ingresos.length > 0 ? (
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <table className="min-w-full text-sm text-left">
-                <thead className="text-xs uppercase bg-gray-700">
-                  <tr>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3">Fecha</th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3">Caja</th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3">Monto</th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3">Método</th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">Notas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ingresos.map((ingreso) => (
-                    <tr key={ingreso.id} className="border-b border-gray-700 hover:bg-gray-700">
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm">
-                        {format(parseISO(ingreso.fecha), 'dd/MM/yyyy HH:mm')}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 capitalize text-xs sm:text-sm">{ingreso.caja}</td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 font-medium text-xs sm:text-sm">
-                        ${ingreso.monto.toFixed(2)}
-                        {ingreso.monto > UMBRAL_ALERTA && (
-                          <span className="ml-1 text-red-500">
-                            <AlertCircle size={14} className="inline" />
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 capitalize text-xs sm:text-sm">{ingreso.metodo_pago}</td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-gray-400 hidden sm:table-cell text-xs sm:text-sm">
-                        {ingreso.notas || '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center py-4 text-gray-400">No hay ingresos en el período seleccionado</p>
-          )}
-        </div>
-      )}
-
-      {vistaActual === 'formulario' && (
-        <div className="bg-gray-800 p-4 sm:p-6 rounded-lg max-w-2xl mx-auto">
-          <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Registrar Nuevo Ingreso</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Caja</label>
-              <select
-                className="w-full p-2 sm:p-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50 text-sm sm:text-base"
-                value={caja}
-                onChange={(e) => {
-                  setCaja(e.target.value);
-                  setMetodo('');
-                }}
-              >
-                <option value="">Selecciona caja</option>
-                {CAJAS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Monto</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={monto}
-                  onChange={(e) => validarMonto(e.target.value)}
-                  className={`w-full p-2 sm:p-3 pl-8 bg-gray-700 rounded-lg border ${
-                    montoEsAlto ? 'border-red-500' : 'border-gray-600'
-                  } focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50 text-sm sm:text-base`}
-                />
-                {montoEsAlto && (
-                  <div className="mt-2 flex items-center text-red-500 text-xs sm:text-sm">
-                    <AlertCircle size={16} className="mr-1 flex-shrink-0" />
-                    <span>Monto inusualmente alto. Por favor verifique antes de guardar.</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Método de Pago</label>
-              <select
-                className="w-full p-2 sm:p-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50 text-sm sm:text-base"
-                value={metodo}
-                onChange={(e) => setMetodo(e.target.value)}
-                disabled={!caja}
-              >
-                <option value="">Selecciona método</option>
-                {caja &&
-                  METODOS_PAGO[caja].map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">Notas (opcional)</label>
-              <textarea
-                placeholder="Ingrese notas adicionales..."
-                value={notas}
-                onChange={(e) => setNotas(e.target.value)}
-                className="w-full p-2 sm:p-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-red-500 focus:ring focus:ring-red-500 focus:ring-opacity-50 h-20 sm:h-24 text-sm sm:text-base"
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:space-x-4 pt-4">
-              <button
-                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center"
-                onClick={agregarIngreso}
-              >
-                <DollarSign size={18} className="mr-2" />
-                Guardar Ingreso
-              </button>
-              <button
-                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 sm:py-3 px-4 rounded-lg font-medium transition-colors"
-                onClick={resetearFormulario}
-              >
-                Limpiar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  </main>
-);
+    </main>
+  );
 }
