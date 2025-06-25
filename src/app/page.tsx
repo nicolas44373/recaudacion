@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { format, subDays } from 'date-fns';
+import { format, subDays, parseISO } from 'date-fns';
 import NavigationBar from '@/components/NavigationBar';
 import FiltroFechaExportar from '@/components/FiltroFechaExportar';
 import DashboardStats from '@/components/DashboardStats';
@@ -59,33 +59,56 @@ export default function DashboardPage() {
   };
 
   const calcularEstadisticas = (ingresosData: any[], gastosData: any[]) => {
-    const hoy = format(new Date(), 'yyyy-MM-dd');
-    const inicioSemana = format(subDays(new Date(), 7), 'yyyy-MM-dd');
-    const inicioMes = format(new Date(), 'yyyy-MM-01');
+  const hastaDate = parseISO(hasta); // ✅ cambio clave
+  const hoy = format(hastaDate, 'yyyy-MM-dd');
+  const inicioSemana = format(subDays(hastaDate, 6), 'yyyy-MM-dd');
+  const inicioMes = format(new Date(hastaDate.getFullYear(), hastaDate.getMonth(), 1), 'yyyy-MM-dd');
 
-    const totalHoy = ingresosData.filter((ing) => ing.fecha.startsWith(hoy)).reduce((sum, ing) => sum + ing.monto, 0);
-    const totalSemana = ingresosData.filter((ing) => ing.fecha >= inicioSemana).reduce((sum, ing) => sum + ing.monto, 0);
-    const totalMes = ingresosData.filter((ing) => ing.fecha >= inicioMes).reduce((sum, ing) => sum + ing.monto, 0);
-    const totalIngresos = ingresosData.length;
-    const promedioIngreso = totalIngresos > 0 ? ingresosData.reduce((sum, ing) => sum + ing.monto, 0) / totalIngresos : 0;
+  const totalHoy = ingresosData
+    .filter((ing) => ing.fecha === hoy)
+    .reduce((sum, ing) => sum + Number(ing.monto), 0);
 
-    const totalGastosMes = gastosData.filter((g) => g.fecha >= inicioMes).reduce((sum, g) => sum + g.monto, 0);
+  const totalSemana = ingresosData
+    .filter((ing) => ing.fecha >= inicioSemana && ing.fecha <= hoy)
+    .reduce((sum, ing) => sum + Number(ing.monto), 0);
 
-    setEstadisticas({ totalHoy, totalMes, totalSemana, totalIngresos, promedioIngreso, totalGastosMes });
-  };
+  const totalMes = ingresosData
+    .filter((ing) => ing.fecha >= inicioMes && ing.fecha <= hoy)
+    .reduce((sum, ing) => sum + Number(ing.monto), 0);
+
+  const totalIngresos = ingresosData.length;
+
+  const promedioIngreso = totalIngresos > 0
+    ? ingresosData.reduce((sum, ing) => sum + Number(ing.monto), 0) / totalIngresos
+    : 0;
+
+  const totalGastosMes = gastosData
+    .filter((g) => g.fecha >= inicioMes && g.fecha <= hoy)
+    .reduce((sum, g) => sum + Number(g.monto), 0);
+
+  setEstadisticas({
+    totalHoy,
+    totalSemana,
+    totalMes,
+    totalIngresos,
+    promedioIngreso,
+    totalGastosMes,
+  });
+};
+
 
   useEffect(() => {
     cargarIngresos();
     cargarGastos();
   }, [desde, hasta]);
 
-  const movimientosConTipo = [
-    ...ingresos.map((i) => ({ ...i, tipo: 'ingreso' })),
-    ...gastos.map((g) => ({ ...g, tipo: 'gasto' })),
-  ];
+const movimientosConTipo = [
+  ...ingresos.map((i) => ({ ...i, tipo: 'ingreso' })),
+  ...gastos.map((g) => ({ ...g, tipo: 'gasto' })),
+];
 
   const datosPorMes = prepararDatosPorMes(ingresos);
-  const datosPorCaja = prepararDatosPorCaja(movimientosConTipo);
+const datosPorCaja = prepararDatosPorCaja(movimientosConTipo);
   const datosPorMetodo = prepararDatosPorMetodo(ingresos);
 
   return (
@@ -103,7 +126,7 @@ export default function DashboardPage() {
         {vistaActual === 'dashboard' && (
           <>
             <div className="mb-8">
-              <DashboardStats estadisticas={estadisticas} />
+              <DashboardStats estadisticas={estadisticas} desde={desde} hasta={hasta} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1,18 +1,82 @@
-// Nuevo componente: GastoTable.tsx
 'use client';
+import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { AlertCircle } from 'lucide-react';
 
 const UMBRAL_ALERTA = 5000000;
 
+const CATEGORIAS_GASTOS = [
+  "CUENTA GALICIA JULITO",
+  "CUENTA GALICIA ROCIO",
+  "CUENTA MERCADO PAGO",
+  "TRANSFERENCIAS FINANCIERAS",
+  "CHEQUES FINANCIEROS",
+  "CHEQUES DE LEO FINANCISTA",
+  "SUELDOS FIJOS",
+  "SUELDOS TEMPORALES",
+  "LIMPIEZA",
+  "BOLSAS",
+  "DESAYUNO",
+  "COMBUSTIBLE",
+  "ROCIO PERSONAL",
+  "JULITO PERSONAL",
+  "LEO PERSONAL",
+  "EPI PERSONAL",
+  "CASA",
+  "MARKETING",
+  "SEGURIDAD",
+  "ALMUERZO",
+  "LIBRERIA",
+  "HORAS EXTRA",
+  "GASTOS EXTRA",
+  "TAXI/UBER",
+  "SUPER",
+  "SERVICIOS",
+  "PAGO TARJETA",
+  "PAGO PROVEEDORES",
+  "MUNICIPALES",
+  "MANTENIMIENTO JURAMENTO",
+  "MANTENIMIENTO COLON",
+  "MANTENIMIENTO JUAN B JUSTO",
+  "MANTENIMIENTO DE VEHICULOS",
+  "ALQUILER",
+  "IMPUESTOS",
+  "COSTOS FINANCIEROS",
+  "TARJETA",
+  "PUERTOS DE FRIO",
+  "LEO",
+  "FINANCIERA",
+  "DEPOSITO EN CUENTA"
+];
+
+
 export default function GastoTable({ gastos }: { gastos: any[] }) {
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
+
   const formatMonto = (monto: number) =>
     monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 });
 
+  const gastosFiltrados = categoriaSeleccionada
+    ? gastos.filter((g) => g.categoria === categoriaSeleccionada)
+    : gastos;
+
   return (
     <div className="bg-gray-800 p-6 rounded-lg mb-8 shadow-lg">
-      <h2 className="text-xl font-semibold mb-6 border-b border-gray-700 pb-2">Listado de Gastos</h2>
-      {gastos.length > 0 ? (
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+        <h2 className="text-xl font-semibold">Listado de Gastos</h2>
+        <select
+          className="bg-gray-700 border border-gray-600 text-sm rounded-lg px-3 py-2"
+          value={categoriaSeleccionada}
+          onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+        >
+          <option value="">Todas las categorías</option>
+          {CATEGORIAS_GASTOS.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+
+      {gastosFiltrados.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm text-left border-separate border-spacing-y-2">
             <thead className="text-xs uppercase bg-gray-700 text-gray-300">
@@ -25,9 +89,11 @@ export default function GastoTable({ gastos }: { gastos: any[] }) {
               </tr>
             </thead>
             <tbody>
-              {gastos.map((gasto) => (
+              {gastosFiltrados.map((gasto) => (
                 <tr key={gasto.id} className="bg-gray-700 hover:bg-gray-600 transition rounded-lg">
-                  <td className="px-4 py-3 text-xs text-gray-300">{format(parseISO(gasto.fecha), 'dd/MM/yyyy HH:mm')}</td>
+                  <td className="px-4 py-3 text-xs text-gray-300">
+                    {format(parseISO(gasto.fecha), 'dd/MM/yyyy HH:mm')}
+                  </td>
                   <td className="px-4 py-3 capitalize">{gasto.categoria}</td>
                   <td className="px-4 py-3 text-right font-semibold">
                     <span className="inline-block">
@@ -47,7 +113,7 @@ export default function GastoTable({ gastos }: { gastos: any[] }) {
           </table>
         </div>
       ) : (
-        <p className="text-center py-4 text-gray-400">No hay gastos en el período seleccionado</p>
+        <p className="text-center py-4 text-gray-400">No hay gastos en esta categoría</p>
       )}
     </div>
   );

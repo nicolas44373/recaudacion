@@ -23,18 +23,31 @@ export function prepararDatosPorMes(ingresos: Ingreso[]) {
   return Object.values(datosPorMes);
 }
 
-export function prepararDatosPorCaja(ingresos: Ingreso[]) {
-  const totales: Record<string, number> = ingresos.reduce((acc, ingreso) => {
-    acc[ingreso.caja] = (acc[ingreso.caja] || 0) + ingreso.monto;
-    return acc;
-  }, {} as Record<string, number>);
+export function prepararDatosPorCaja(movimientos: { caja: string; monto: number; tipo: 'ingreso' | 'gasto' }[]) {
+  const agrupado: { [key: string]: { tipo: string; caja: string; total: number } } = {};
 
-  const totalGeneral = Object.values(totales).reduce((sum: number, v: number) => sum + v, 0);
+  for (const mov of movimientos) {
+    const key = `${mov.tipo}-${mov.caja}`;
+    if (!agrupado[key]) {
+      agrupado[key] = {
+        tipo: mov.tipo,
+        caja: mov.caja,
+        total: 0,
+      };
+    }
+    agrupado[key].total += mov.monto;
+  }
 
-  return Object.entries(totales).map(([caja, total]) => ({
-    caja,
-    total,
-    porcentaje: totalGeneral ? (total / totalGeneral) * 100 : 0,
+  const datos = Object.values(agrupado);
+
+  const totalIngresos = datos.filter(d => d.tipo === 'ingreso').reduce((sum, d) => sum + d.total, 0);
+  const totalGastos = datos.filter(d => d.tipo === 'gasto').reduce((sum, d) => sum + d.total, 0);
+
+  return datos.map(d => ({
+    ...d,
+    porcentaje: d.tipo === 'ingreso'
+      ? (d.total / totalIngresos) * 100 || 0
+      : (d.total / totalGastos) * 100 || 0,
   }));
 }
 

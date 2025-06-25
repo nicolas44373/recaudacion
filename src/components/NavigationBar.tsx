@@ -40,7 +40,7 @@ export default function NavigationBar({ vistaActual, setVistaActual }: { vistaAc
     }`}
     onClick={() => setVistaActual('gastos')}
   >
-    Ver Gastos
+    Ver Egresos
   </button>
   <button
     className={`px-3 py-2 text-sm sm:text-base rounded-lg ${
@@ -48,7 +48,7 @@ export default function NavigationBar({ vistaActual, setVistaActual }: { vistaAc
     }`}
     onClick={() => setVistaActual('nuevo-gasto')}
   >
-    Nuevo Gasto
+    Nuevo Egreso
   </button>
 </div>
 

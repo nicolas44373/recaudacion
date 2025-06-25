@@ -4,8 +4,51 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { AlertCircle, MinusCircle } from 'lucide-react';
 
-const METODOS_PAGO = ['efectivo', 'tarjeta', 'transferencia'];
-const CATEGORIAS = ['insumos', 'servicios', 'sueldos', 'otros'];
+const METODOS_PAGO = ["Efectivo", "Transferencia", "Depósito", "Cheque", "eCheq"];
+const CATEGORIAS = [
+  "CUENTA GALICIA JULITO",
+  "CUENTA GALICIA ROCIO",
+  "CUENTA MERCADO PAGO",
+  "TRANSFERENCIAS FINANCIERAS",
+  "CHEQUES FINANCIEROS",
+  "CHEQUES DE LEO FINANCISTA",
+  "SUELDOS FIJOS",
+  "SUELDOS TEMPORALES",
+  "LIMPIEZA",
+  "BOLSAS",
+  "DESAYUNO",
+  "COMBUSTIBLE",
+  "ROCIO PERSONAL",
+  "JULITO PERSONAL",
+  "LEO PERSONAL",
+  "EPI PERSONAL",
+  "CASA",
+  "MARKETING",
+  "SEGURIDAD",
+  "ALMUERZO",
+  "LIBRERIA",
+  "HORAS EXTRA",
+  "GASTOS EXTRA",
+  "TAXI/UBER",
+  "SUPER",
+  "SERVICIOS",
+  "PAGO TARJETA",
+  "PAGO PROVEEDORES",
+  "MUNICIPALES",
+  "MANTENIMIENTO JURAMENTO",
+  "MANTENIMIENTO COLON",
+  "MANTENIMIENTO JUAN B JUSTO",
+  "MANTENIMIENTO DE VEHICULOS",
+  "ALQUILER",
+  "IMPUESTOS",
+  "COSTOS FINANCIEROS",
+  "TARJETA",
+  "PUERTOS DE FRIO",
+  "LEO",
+  "FINANCIERA",
+  "DEPOSITO EN CUENTA"
+];
+
 const UMBRAL_ALERTA = 5000000;
 
 export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
