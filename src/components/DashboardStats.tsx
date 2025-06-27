@@ -60,19 +60,19 @@ export default function DashboardStats({ estadisticas, desde, hasta }: Dashboard
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <StatCard
         icon={<DollarSign size={24} className="text-blue-500" />}
-        label="Ingresos del día"
+        label="Ingresos en efectivo del día"
         value={estadisticas.totalHoy}
         subtext={`Día: ${hoy}`}
       />
       <StatCard
         icon={<CreditCard size={24} className="text-red-500" />}
-        label="Egresos del día"
+        label="Egresos en efectivo del día"
         value={estadisticas.egresosHoy}
         subtext={`Día: ${hoy}`}
       />
       <StatCard
         icon={<Wallet size={24} className="text-teal-500" />}
-        label="Dinero del día"
+        label="Dinero del día en efectivo"
         value={estadisticas.dineroHoy}
         subtext={`Día: ${hoy}`}
       />
