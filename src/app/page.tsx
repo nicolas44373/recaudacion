@@ -28,13 +28,18 @@ export default function DashboardPage() {
   const [ingresos, setIngresos] = useState<any[]>([]);
   const [gastos, setGastos] = useState<any[]>([]);
   const [estadisticas, setEstadisticas] = useState({
-    totalHoy: 0,
-    totalMes: 0,
-    totalSemana: 0,
-    totalIngresos: 0,
-    promedioIngreso: 0,
-    totalGastosMes: 0,
-  });
+  totalHoy: 0,
+  totalMes: 0,
+  totalSemana: 0,
+  totalIngresos: 0,
+  promedioIngreso: 0,
+  totalGastosMes: 0,
+  egresosHoy: 0,     // 🆕
+  dineroHoy: 0,      // 🆕
+  totalTarjetaTransferencia:0,
+    dineroGlobalHoy: 0
+});
+
 
   const cargarIngresos = async () => {
     let query = supabase.from('ingresos').select('*');
@@ -58,15 +63,23 @@ export default function DashboardPage() {
     }
   };
 
-  const calcularEstadisticas = (ingresosData: any[], gastosData: any[]) => {
-  const hastaDate = parseISO(hasta); // ✅ cambio clave
+const calcularEstadisticas = (ingresosData: any[], gastosData: any[]) => {
+  const hastaDate = parseISO(hasta);
   const hoy = format(hastaDate, 'yyyy-MM-dd');
   const inicioSemana = format(subDays(hastaDate, 6), 'yyyy-MM-dd');
   const inicioMes = format(new Date(hastaDate.getFullYear(), hastaDate.getMonth(), 1), 'yyyy-MM-dd');
 
-  const totalHoy = ingresosData
-    .filter((ing) => ing.fecha === hoy)
-    .reduce((sum, ing) => sum + Number(ing.monto), 0);
+  // Filtrar por día actual y método efectivo
+  const ingresosHoyEfectivo = ingresosData.filter(
+    (ing) => ing.fecha.startsWith(hoy) && ing.metodo_pago === 'Efectivo'
+  );
+
+  const egresosHoyEfectivo = gastosData.filter(
+    (g) => g.fecha.startsWith(hoy) && g.metodo_pago === 'Efectivo'
+  );
+
+  const totalHoy = ingresosHoyEfectivo.reduce((sum, ing) => sum + Number(ing.monto), 0);
+  const egresosHoy = egresosHoyEfectivo.reduce((sum, g) => sum + Number(g.monto), 0);
 
   const totalSemana = ingresosData
     .filter((ing) => ing.fecha >= inicioSemana && ing.fecha <= hoy)
@@ -86,15 +99,36 @@ export default function DashboardPage() {
     .filter((g) => g.fecha >= inicioMes && g.fecha <= hoy)
     .reduce((sum, g) => sum + Number(g.monto), 0);
 
+  // Tarjeta y transferencia (solo día actual)
+  const tarjetaTransferenciaHoy = ingresosData
+    .filter(
+      (i) =>
+        i.fecha.startsWith(hoy) &&
+        (i.metodo_pago === 'Tarjeta' || i.metodo_pago === 'Transferencia')
+    )
+    .reduce((sum, i) => sum + Number(i.monto), 0);
+
+  // Dinero global = efectivo + todos los otros métodos
+  const dineroGlobalHoy = ingresosData
+    .filter((i) => i.fecha.startsWith(hoy))
+    .reduce((sum, i) => sum + Number(i.monto), 0);
+
   setEstadisticas({
     totalHoy,
+    egresosHoy,
+    dineroHoy: totalHoy - egresosHoy,
     totalSemana,
     totalMes,
-    totalIngresos,
     promedioIngreso,
     totalGastosMes,
+    totalTarjetaTransferencia: tarjetaTransferenciaHoy,
+    dineroGlobalHoy,
+    totalIngresos,
   });
 };
+
+
+
 
 
   useEffect(() => {

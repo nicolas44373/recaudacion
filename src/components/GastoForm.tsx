@@ -1,4 +1,3 @@
-// Nuevo componente: GastoForm.tsx
 'use client';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -6,49 +5,17 @@ import { AlertCircle, MinusCircle } from 'lucide-react';
 
 const METODOS_PAGO = ["Efectivo", "Transferencia", "Depósito", "Cheque", "eCheq"];
 const CATEGORIAS = [
-  "CUENTA GALICIA JULITO",
-  "CUENTA GALICIA ROCIO",
-  "CUENTA MERCADO PAGO",
-  "TRANSFERENCIAS FINANCIERAS",
-  "CHEQUES FINANCIEROS",
-  "CHEQUES DE LEO FINANCISTA",
-  "SUELDOS FIJOS",
-  "SUELDOS TEMPORALES",
-  "LIMPIEZA",
-  "BOLSAS",
-  "DESAYUNO",
-  "COMBUSTIBLE",
-  "ROCIO PERSONAL",
-  "JULITO PERSONAL",
-  "LEO PERSONAL",
-  "EPI PERSONAL",
-  "CASA",
-  "MARKETING",
-  "SEGURIDAD",
-  "ALMUERZO",
-  "LIBRERIA",
-  "HORAS EXTRA",
-  "GASTOS EXTRA",
-  "TAXI/UBER",
-  "SUPER",
-  "SERVICIOS",
-  "PAGO TARJETA",
-  "PAGO PROVEEDORES",
-  "MUNICIPALES",
-  "MANTENIMIENTO JURAMENTO",
-  "MANTENIMIENTO COLON",
-  "MANTENIMIENTO JUAN B JUSTO",
-  "MANTENIMIENTO DE VEHICULOS",
-  "ALQUILER",
-  "IMPUESTOS",
-  "COSTOS FINANCIEROS",
-  "TARJETA",
-  "PUERTOS DE FRIO",
-  "LEO",
-  "FINANCIERA",
-  "DEPOSITO EN CUENTA"
+  "CUENTA GALICIA JULITO", "CUENTA GALICIA ROCIO", "CUENTA MERCADO PAGO", "TRANSFERENCIAS FINANCIERAS",
+  "CHEQUES FINANCIEROS", "CHEQUES DE LEO FINANCISTA", "SUELDOS FIJOS", "SUELDOS TEMPORALES",
+  "LIMPIEZA", "BOLSAS", "DESAYUNO", "COMBUSTIBLE", "ROCIO PERSONAL", "JULITO PERSONAL", "LEO PERSONAL",
+  "EPI PERSONAL", "CASA", "MARKETING", "SEGURIDAD", "ALMUERZO", "LIBRERIA", "HORAS EXTRA", "GASTOS EXTRA",
+  "TAXI/UBER", "SUPER", "SERVICIOS", "PAGO TARJETA", "PAGO PROVEEDORES", "MUNICIPALES",
+  "MANTENIMIENTO JURAMENTO", "MANTENIMIENTO COLON", "MANTENIMIENTO JUAN B JUSTO", "MANTENIMIENTO DE VEHICULOS",
+  "ALQUILER", "IMPUESTOS", "COSTOS FINANCIEROS", "TARJETA", "PUERTOS DE FRIO", "LEO", "FINANCIERA",
+  "DEPOSITO EN CUENTA", "CONTADOR"
 ];
 
+const DENOMINACIONES = [10, 20, 50, 100, 200, 500, 1000, 2000, 10000, 20000];
 const UMBRAL_ALERTA = 5000000;
 
 export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
@@ -57,10 +24,18 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
   const [metodo, setMetodo] = useState('');
   const [notas, setNotas] = useState('');
   const [montoEsAlto, setMontoEsAlto] = useState(false);
+  const [billetes, setBilletes] = useState<Record<number, number>>({});
 
   const validarMonto = (valor: string) => {
     setMonto(valor);
     setMontoEsAlto(parseFloat(valor) > UMBRAL_ALERTA);
+  };
+
+  const calcularTotalBilletes = () => {
+    return DENOMINACIONES.reduce((total, denom) => {
+      const cantidad = billetes[denom] || 0;
+      return total + denom * cantidad;
+    }, 0);
   };
 
   const resetearFormulario = () => {
@@ -69,6 +44,7 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
     setMetodo('');
     setNotas('');
     setMontoEsAlto(false);
+    setBilletes({});
   };
 
   const agregarGasto = async () => {
@@ -110,6 +86,34 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
 
         <div>
+          <label className="block text-sm font-medium text-gray-400 mb-1">Método de Pago</label>
+          <select className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600" value={metodo} onChange={(e) => setMetodo(e.target.value)}>
+            <option value="">Selecciona método</option>
+            {METODOS_PAGO.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+
+        {metodo === 'Efectivo' && (
+          <div className="bg-gray-700 p-3 rounded-lg">
+            <p className="text-sm font-medium text-gray-300 mb-2">Denominaciones</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {DENOMINACIONES.map((denom) => (
+                <div key={denom} className="flex items-center space-x-2">
+                  <label className="text-gray-300 w-12">${denom}</label>
+                  <input
+                    type="number"
+                    className="w-full p-1 rounded bg-gray-800 border border-gray-600 text-sm"
+                    min="0"
+                    value={billetes[denom] || ''}
+                    onChange={(e) => setBilletes({ ...billetes, [denom]: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-sm text-gray-400">Total calculado: <span className="text-green-400 font-semibold">${calcularTotalBilletes().toLocaleString()}</span></p>
+          </div>
+        )}
+        <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">Monto</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
@@ -120,14 +124,6 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
               <AlertCircle size={16} className="mr-1" /> Monto inusualmente alto. Verifica antes de guardar.
             </div>
           )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">Método de Pago</label>
-          <select className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600" value={metodo} onChange={(e) => setMetodo(e.target.value)}>
-            <option value="">Selecciona método</option>
-            {METODOS_PAGO.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
         </div>
 
         <div>

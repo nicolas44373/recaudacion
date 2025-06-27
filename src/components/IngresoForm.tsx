@@ -11,7 +11,7 @@ const CATEGORIAS = [
 ];
 
 const METODOS_PAGO = ["Efectivo", "Transferencia", "Depósito","Tarjeta", "Cheque", "eCheq"];
-
+const DENOMINACIONES = [10, 20, 50, 100, 200, 500, 1000, 2000, 10000, 20000];
 const UMBRAL_ALERTA = 50000000;
 
 export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
@@ -20,10 +20,15 @@ export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
   const [monto, setMonto] = useState('');
   const [notas, setNotas] = useState('');
   const [montoEsAlto, setMontoEsAlto] = useState(false);
+  const [denominaciones, setDenominaciones] = useState<Record<number, number>>({});
 
   const validarMonto = (valor: string) => {
     setMonto(valor);
     setMontoEsAlto(parseFloat(valor) > UMBRAL_ALERTA);
+  };
+
+  const calcularTotalBilletes = () => {
+    return DENOMINACIONES.reduce((acc, den) => acc + (denominaciones[den] || 0) * den, 0);
   };
 
   const resetearFormulario = () => {
@@ -32,6 +37,7 @@ export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
     setMonto('');
     setNotas('');
     setMontoEsAlto(false);
+    setDenominaciones({});
   };
 
   const agregarIngreso = async () => {
@@ -64,14 +70,11 @@ export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
     <div className="bg-gray-800 p-4 sm:p-6 rounded-lg max-w-2xl mx-auto">
       <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Registrar Nuevo Ingreso</h2>
       <div className="space-y-4">
-
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">Categoría</label>
           <select className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600 text-sm" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
             <option value="">Selecciona una categoría</option>
-            {CATEGORIAS.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
+            {CATEGORIAS.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
           </select>
         </div>
 
@@ -79,11 +82,37 @@ export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
           <label className="block text-sm font-medium text-gray-400 mb-1">Método de Pago</label>
           <select className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600 text-sm" value={metodoPago} onChange={(e) => setMetodoPago(e.target.value)}>
             <option value="">Selecciona un método</option>
-            {METODOS_PAGO.map((met) => (
-              <option key={met} value={met}>{met}</option>
-            ))}
+            {METODOS_PAGO.map((met) => <option key={met} value={met}>{met}</option>)}
           </select>
         </div>
+
+        {metodoPago === 'Efectivo' && (
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <h3 className="text-sm font-semibold text-gray-300 mb-2">Detalle de Billetes</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {DENOMINACIONES.map((den) => (
+                <div key={den} className="flex items-center space-x-2">
+                  <label className="text-sm text-gray-200 w-16">${den}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={denominaciones[den] || ''}
+                    onChange={(e) =>
+                      setDenominaciones({
+                        ...denominaciones,
+                        [den]: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full p-1 bg-gray-600 rounded text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="text-right mt-2 text-green-400 text-sm">
+              Total calculado: ${calcularTotalBilletes().toLocaleString('es-AR')}
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-400 mb-1">Monto</label>

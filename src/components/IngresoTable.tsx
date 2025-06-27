@@ -30,7 +30,7 @@ export default function IngresoTable({ ingresos }: { ingresos: any[] }) {
             <thead className="text-xs uppercase bg-gray-700 text-gray-300">
               <tr>
                 <th className="px-4 py-3 rounded-l-lg">Fecha</th>
-                <th className="px-4 py-3">Caja</th>
+                <th className="px-4 py-3">Categoria</th>
                 <th className="px-4 py-3 text-right">Monto</th>
                 <th className="px-4 py-3">Método</th>
                 <th className="px-4 py-3 rounded-r-lg hidden sm:table-cell">Notas</th>
@@ -40,7 +40,7 @@ export default function IngresoTable({ ingresos }: { ingresos: any[] }) {
               {ingresos.map((ingreso) => (
                 <tr key={ingreso.id} className="bg-gray-700 hover:bg-gray-600 transition rounded-lg">
                   <td className="px-4 py-3 text-xs text-gray-300">{format(parseISO(ingreso.fecha), 'dd/MM/yyyy HH:mm')}</td>
-                  <td className="px-4 py-3 capitalize">{ingreso.caja}</td>
+                  <td className="px-4 py-3 capitalize">{ingreso.categoria}</td>
                   <td className="px-4 py-3 text-right font-semibold">
                     <span className="inline-block">
                       {formatMonto(ingreso.monto)}
