@@ -19,7 +19,7 @@
   ],
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
-    "core-js": "^3.37.0",
+    "core-js": "^3.43.0",
     "date-fns": "^4.1.0",
     "file-saver": "^2.0.5",
     "lucide-react": "^0.503.0",
