@@ -168,11 +168,15 @@ export default function DashboardPage() {
           </>
         )}
 
-        {vistaActual === 'ingresos' && <IngresoTable ingresos={ingresos} />}
+        {vistaActual === 'ingresos' && <IngresoTable ingresos={ingresos} onRefresh={cargarIngresos} />
+}
 
         {vistaActual === 'formulario' && <IngresoForm onSuccess={cargarIngresos} />}
 
-        {vistaActual === 'gastos' && <GastoTable gastos={gastos} />}
+       {vistaActual === 'gastos' && (
+  <GastoTable gastos={gastos} onRefresh={cargarGastos} />
+)}
+
 
         {vistaActual === 'nuevo-gasto' && <GastoForm onSuccess={cargarGastos} />}
 
