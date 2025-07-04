@@ -118,7 +118,17 @@ export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
           <label className="block text-sm font-medium text-gray-400 mb-1">Monto</label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-            <input type="number" placeholder="0.00" value={monto} onChange={(e) => validarMonto(e.target.value)} className={`w-full p-2 pl-8 bg-gray-700 rounded-lg border ${montoEsAlto ? 'border-red-500' : 'border-gray-600'} text-sm`} />
+            <input 
+  type="text" 
+  placeholder="0.00" 
+  value={monto} 
+  onChange={(e) => {
+    // Solo permitir números y punto decimal
+    const valor = e.target.value.replace(/[^0-9.]/g, '');
+    validarMonto(valor);
+  }} 
+  className={`w-full p-2 pl-8 bg-gray-700 rounded-lg border ${montoEsAlto ? 'border-red-500' : 'border-gray-600'}`} 
+/>
           </div>
           {montoEsAlto && (
             <div className="mt-2 flex items-center text-red-500 text-xs">
