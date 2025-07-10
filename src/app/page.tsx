@@ -139,7 +139,7 @@ export default function DashboardPage() {
   const datosPorMetodo = prepararDatosPorMetodo(ingresos);
 
   return (
-    <main className="bg-gray-900 min-h-screen text-white">
+    <main className="bg-pink-100 min-h-screen text-white">
       <NavigationBar vistaActual={vistaActual} setVistaActual={setVistaActual} />
       <div className="max-w-7xl mx-auto px-4 py-4 space-y-8">
         <FiltroFechaExportar
