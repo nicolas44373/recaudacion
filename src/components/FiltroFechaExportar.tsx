@@ -13,35 +13,44 @@ interface Ingreso {
   notas?: string;
 }
 
+interface Gasto {
+  categoria: string;
+  monto: number;
+  metodo_pago: string;
+  fecha: string;
+  notas?: string;
+}
+
 interface Props {
   desde: string;
   hasta: string;
   setDesde: (value: string) => void;
   setHasta: (value: string) => void;
-  ingresos: Ingreso[];
+  datos: Ingreso[] | Gasto[]; // Datos genéricos
+  tipo: 'ingresos' | 'gastos'; // Tipo de datos
 }
 
-export default function FiltroFechaExportar({ desde, hasta, setDesde, setHasta, ingresos }: Props) {
+export default function FiltroFechaExportar({ desde, hasta, setDesde, setHasta, datos, tipo }: Props) {
   const exportarExcel = () => {
-    if (!Array.isArray(ingresos) || ingresos.length === 0) {
+    if (!Array.isArray(datos) || datos.length === 0) {
       alert('No hay datos para exportar.');
       return;
     }
 
     try {
-      const datosExcel = ingresos.map((ing) => ({
-        Caja: ing.categoria || 'Sin categoría',
-        Monto: ing.monto || 0,
-        'Método de Pago': ing.metodo_pago || 'N/A',
-        Fecha: isValid(parseISO(ing.fecha))
-          ? format(parseISO(ing.fecha), 'dd/MM/yyyy HH:mm')
+      const datosExcel = datos.map((item) => ({
+        Categoría: item.categoria || 'Sin categoría',
+        Monto: item.monto || 0,
+        'Método de Pago': item.metodo_pago || 'N/A',
+        Fecha: isValid(parseISO(item.fecha))
+          ? format(parseISO(item.fecha), 'dd/MM/yyyy HH:mm')
           : 'Fecha inválida',
-        Notas: ing.notas || '',
+        Notas: item.notas || '',
       }));
 
       const ws = XLSX.utils.json_to_sheet(datosExcel);
       ws['!cols'] = [
-        { wch: 15 }, // Caja
+        { wch: 15 }, // Categoría
         { wch: 12 }, // Monto
         { wch: 18 }, // Método de Pago
         { wch: 22 }, // Fecha
@@ -49,15 +58,19 @@ export default function FiltroFechaExportar({ desde, hasta, setDesde, setHasta, 
       ];
 
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Ingresos');
+      const nombreHoja = tipo === 'ingresos' ? 'Ingresos' : 'Gastos';
+      XLSX.utils.book_append_sheet(wb, ws, nombreHoja);
 
+      const nombreArchivo = `${tipo}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
       const blob = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      saveAs(new Blob([blob]), `ingresos_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+      saveAs(new Blob([blob]), nombreArchivo);
     } catch (error) {
-      console.error('Error al exportar Excel:', error);
+      console.error(`Error al exportar Excel de ${tipo}:`, error);
       alert('Ocurrió un error al exportar el archivo.');
     }
   };
+
+  const tituloBoton = tipo === 'ingresos' ? 'Exportar Ingresos' : 'Exportar Gastos';
 
   return (
     <div className="bg-gray-800 p-4 rounded-lg mb-6">
@@ -88,7 +101,7 @@ export default function FiltroFechaExportar({ desde, hasta, setDesde, setHasta, 
           className="bg-green-600 hover:bg-green-700 p-2 rounded flex items-center justify-center transition-colors duration-200"
         >
           <Download size={18} className="mr-2" />
-          Exportar a Excel
+          {tituloBoton}
         </button>
       </div>
     </div>

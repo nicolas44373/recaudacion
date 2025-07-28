@@ -142,13 +142,18 @@ export default function DashboardPage() {
     <main className="bg-pink-100 min-h-screen text-white">
       <NavigationBar vistaActual={vistaActual} setVistaActual={setVistaActual} />
       <div className="max-w-7xl mx-auto px-4 py-4 space-y-8">
-        <FiltroFechaExportar
-          desde={desde}
-          hasta={hasta}
-          setDesde={setDesde}
-          setHasta={setHasta}
-          ingresos={ingresos}
-        />
+        
+        {/* Mostrar filtro solo en dashboard, ingresos y gastos */}
+        {(vistaActual === 'dashboard' || vistaActual === 'ingresos' || vistaActual === 'gastos') && (
+          <FiltroFechaExportar 
+            desde={desde}
+            hasta={hasta}
+            setDesde={setDesde}
+            setHasta={setHasta}
+            datos={vistaActual === 'gastos' ? gastos : ingresos}
+            tipo={vistaActual === 'gastos' ? 'gastos' : 'ingresos'}
+          />
+        )}
 
         {vistaActual === 'dashboard' && (
           <>
@@ -168,15 +173,13 @@ export default function DashboardPage() {
           </>
         )}
 
-        {vistaActual === 'ingresos' && <IngresoTable ingresos={ingresos} onRefresh={cargarIngresos} />
-}
+        {vistaActual === 'ingresos' && <IngresoTable ingresos={ingresos} onRefresh={cargarIngresos} />}
 
         {vistaActual === 'formulario' && <IngresoForm onSuccess={cargarIngresos} />}
 
-       {vistaActual === 'gastos' && (
-  <GastoTable gastos={gastos} onRefresh={cargarGastos} />
-)}
-
+        {vistaActual === 'gastos' && (
+          <GastoTable gastos={gastos} onRefresh={cargarGastos} />
+        )}
 
         {vistaActual === 'nuevo-gasto' && <GastoForm onSuccess={cargarGastos} />}
 
