@@ -12,7 +12,7 @@ const CATEGORIAS = [
 
 const METODOS_PAGO = ["Efectivo", "Transferencia", "Depósito","Tarjeta", "Cheque", "eCheq"];
 const DENOMINACIONES = [10, 20, 50, 100, 200, 500, 1000, 2000, 10000, 20000];
-const UMBRAL_ALERTA = 50000000;
+const UMBRAL_ALERTA = 500000000;
 
 export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
   const [categoria, setCategoria] = useState('');
