@@ -7,12 +7,21 @@ import { AlertCircle, Edit, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const UMBRAL_ALERTA = 50000000;
-// Categorías de ejemplo; ajústalas según tu tabla
+
 const CATEGORIAS_INGRESOS = [
   "INICIO DEL DIA", "CAJA MAYORISTA TM", "CAJA MAYORISTA TT", "CAJA MINORISTA TM", "CAJA MINORISTA TT",
   "CAJA COLON TM", "CAJA COLON TT", "CUENTA GALICIA JULITO", "CUENTA GALICIA ROCIO", "CUENTA MERCADO PAGO",
   "ANTICIPO DE CAJA MAYORISTA", "ANTICIPO DE CAJA MINORISTA", "ANTICIPO DE CAJA COLON", "COBRANZAS", "REPARTO",
   "TRANSFERENCIAS FINANCIERAS", "CHEQUES FINANCIEROS", "CHEQUES DE LEO FINANCISTA", "EPI PERSONAL","DEPOSITO EN CUENTA","SOBRANTES", "PRESTAMOS","INGRESOS EXTRAS"
+];
+
+const METODOS_PAGO = [
+  "Efectivo",
+  "Transferencia",
+  "Depósito",
+  "Tarjeta",
+  "Cheque",
+  "eCheq"
 ];
 
 interface Ingreso {
@@ -31,6 +40,7 @@ interface Props {
 
 export default function IngresoTable({ ingresos, onRefresh }: Props) {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
+  const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Ingreso>>({});
 
@@ -39,17 +49,23 @@ export default function IngresoTable({ ingresos, onRefresh }: Props) {
 
   const colorMetodo = (metodo: string) => {
     switch (metodo.toLowerCase()) {
-      case 'contado': return 'text-green-400';
+      case 'contado': 
+      case 'efectivo': return 'text-green-400';
       case 'tarjeta': return 'text-blue-400';
       case 'transferencia': return 'text-yellow-400';
+      case 'cheque':
+      case 'echeq': return 'text-purple-400';
+      case 'depósito': return 'text-cyan-400';
       default: return 'text-white';
     }
   };
 
-  // Filtrado por categoría
-  const ingresosFiltrados = categoriaSeleccionada
-    ? ingresos.filter(i => i.categoria === categoriaSeleccionada)
-    : ingresos;
+  // Filtrado por categoría y método de pago
+  const ingresosFiltrados = ingresos.filter(i => {
+    const coincideCategoria = categoriaSeleccionada ? i.categoria === categoriaSeleccionada : true;
+    const coincideMetodo = metodoPagoSeleccionado ? i.metodo_pago === metodoPagoSeleccionado : true;
+    return coincideCategoria && coincideMetodo;
+  });
 
   // Inicia edición inline
   const startEditing = (i: Ingreso) => {
@@ -104,18 +120,30 @@ export default function IngresoTable({ ingresos, onRefresh }: Props) {
 
   return (
     <div className="bg-gray-800 p-6 rounded-lg mb-8 shadow-lg">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
         <h2 className="text-xl font-semibold">Listado de Ingresos</h2>
-        <select
-          className="bg-gray-700 border border-gray-600 text-sm rounded-lg px-3 py-2"
-          value={categoriaSeleccionada}
-          onChange={e => setCategoriaSeleccionada(e.target.value)}
-        >
-          <option value="">Todas las categorías</option>
-          {CATEGORIAS_INGRESOS.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <select
+            className="bg-gray-700 border border-gray-600 text-sm rounded-lg px-3 py-2"
+            value={categoriaSeleccionada}
+            onChange={e => setCategoriaSeleccionada(e.target.value)}
+          >
+            <option value="">Todas las categorías</option>
+            {CATEGORIAS_INGRESOS.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <select
+            className="bg-gray-700 border border-gray-600 text-sm rounded-lg px-3 py-2"
+            value={metodoPagoSeleccionado}
+            onChange={e => setMetodoPagoSeleccionado(e.target.value)}
+          >
+            <option value="">Todos los métodos</option>
+            {METODOS_PAGO.map(metodo => (
+              <option key={metodo} value={metodo}>{metodo}</option>
+            ))}
+          </select>
+        </div>
       </div>
       {ingresosFiltrados.length > 0 ? (
         <div className="overflow-x-auto">
@@ -218,7 +246,7 @@ export default function IngresoTable({ ingresos, onRefresh }: Props) {
           </table>
         </div>
       ) : (
-        <p className="text-center py-4 text-gray-400">No hay ingresos para mostrar</p>
+        <p className="text-center py-4 text-gray-400">No hay ingresos que coincidan con los filtros seleccionados</p>
       )}
     </div>
   );

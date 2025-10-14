@@ -56,6 +56,15 @@ const CATEGORIAS_GASTOS = [
   "FALTANTES"
 ];
 
+const METODOS_PAGO = [
+  "Efectivo",
+  "Transferencia",
+  "Depósito",
+  "Tarjeta",
+  "Cheque",
+  "eCheq"
+];
+
 interface Gasto {
   id: string;
   fecha: string;
@@ -72,6 +81,7 @@ interface Props {
 
 export default function GastoTable({ gastos, onRefresh }: Props) {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState('');
+  const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Gasto>>({});
 
@@ -127,24 +137,39 @@ export default function GastoTable({ gastos, onRefresh }: Props) {
   const formatMonto = (m: number) =>
     m.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 });
 
-  const gastosFiltrados = categoriaSeleccionada
-    ? gastos.filter(g => g.categoria === categoriaSeleccionada)
-    : gastos;
+  // Filtrado por categoría y método de pago
+  const gastosFiltrados = gastos.filter(g => {
+    const coincideCategoria = categoriaSeleccionada ? g.categoria === categoriaSeleccionada : true;
+    const coincideMetodo = metodoPagoSeleccionado ? g.metodo_pago === metodoPagoSeleccionado : true;
+    return coincideCategoria && coincideMetodo;
+  });
 
   return (
     <div className="bg-gray-800 p-6 rounded-lg mb-8 shadow-lg">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
         <h2 className="text-xl font-semibold">Listado de Gastos</h2>
-        <select
-          className="bg-gray-700 border border-gray-600 text-sm rounded-lg px-3 py-2"
-          value={categoriaSeleccionada}
-          onChange={e => setCategoriaSeleccionada(e.target.value)}
-        >
-          <option value="">Todas las categorías</option>
-          {CATEGORIAS_GASTOS.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <select
+            className="bg-gray-700 border border-gray-600 text-sm rounded-lg px-3 py-2"
+            value={categoriaSeleccionada}
+            onChange={e => setCategoriaSeleccionada(e.target.value)}
+          >
+            <option value="">Todas las categorías</option>
+            {CATEGORIAS_GASTOS.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <select
+            className="bg-gray-700 border border-gray-600 text-sm rounded-lg px-3 py-2"
+            value={metodoPagoSeleccionado}
+            onChange={e => setMetodoPagoSeleccionado(e.target.value)}
+          >
+            <option value="">Todos los métodos</option>
+            {METODOS_PAGO.map(metodo => (
+              <option key={metodo} value={metodo}>{metodo}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {gastosFiltrados.length > 0 ? (
@@ -186,13 +211,13 @@ export default function GastoTable({ gastos, onRefresh }: Props) {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <input
-  type="text"
-  inputMode="decimal"
-  pattern="[0-9]*([\.,][0-9]+)?"
-  value={formData.monto ?? ''}
-  onChange={e => handleChange('monto', parseFloat(e.target.value))}
-  className="p-1 rounded text-black w-full text-right appearance-none"
-/>
+                          type="text"
+                          inputMode="decimal"
+                          pattern="[0-9]*([\.,][0-9]+)?"
+                          value={formData.monto ?? ''}
+                          onChange={e => handleChange('monto', parseFloat(e.target.value))}
+                          className="p-1 rounded text-black w-full text-right appearance-none"
+                        />
                       </td>
                       <td className="px-4 py-3">
                         <input
@@ -251,7 +276,7 @@ export default function GastoTable({ gastos, onRefresh }: Props) {
           </table>
         </div>
       ) : (
-        <p className="text-center py-4 text-gray-400">No hay gastos en esta categoría</p>
+        <p className="text-center py-4 text-gray-400">No hay gastos que coincidan con los filtros seleccionados</p>
       )}
     </div>
   );
