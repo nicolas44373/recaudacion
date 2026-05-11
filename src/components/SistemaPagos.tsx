@@ -87,46 +87,51 @@ function generarHTML(
   <meta charset="UTF-8">
   <title>Comprobante - Alenort</title>
   <style>
-    @page{size:210mm 99mm;margin:5mm 8mm}
+    @page{size:210mm 297mm;margin:0}
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;width:194mm;height:89mm;display:flex;flex-direction:column;overflow:hidden}
+    html,body{width:210mm}
+    body{font-family:Arial,Helvetica,sans-serif;font-size:9.5px;color:#111}
+
+    .comprobante{
+      width:194mm;height:84mm;
+      margin:5mm 8mm;
+      display:flex;flex-direction:column;
+      overflow:hidden;
+    }
 
     /* Cabecera */
-    .hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;margin-bottom:8px;border-bottom:2.5px solid #111;flex-shrink:0}
-    .hdr-left .title{font-size:30px;font-weight:900;letter-spacing:9px;line-height:1}
-    .hdr-left .subtitle{font-size:9px;font-weight:600;letter-spacing:3px;color:#666;margin-top:3px;text-transform:uppercase}
-    .hdr-right{text-align:right;font-size:10px;color:#666;line-height:1.8}
-    .hdr-right strong{color:#111;font-size:11px}
+    .hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:4px;margin-bottom:5px;border-bottom:2px solid #111;flex-shrink:0}
+    .title{font-size:24px;font-weight:900;letter-spacing:8px;line-height:1}
+    .subtitle{font-size:7.5px;font-weight:600;letter-spacing:3px;color:#666;margin-top:2px;text-transform:uppercase}
+    .hdr-right{text-align:right;font-size:9px;color:#666;line-height:1.6}
+    .hdr-right strong{color:#111;font-size:9.5px}
 
-    /* Cuerpo: 2 columnas */
-    .body{display:flex;gap:14px;flex:1;min-height:0;margin-bottom:7px}
-    .info{flex:1.1;padding-right:14px;border-right:1.5px dashed #d0d0d0;display:flex;flex-direction:column;justify-content:space-evenly}
-    .bills{flex:0.9;display:flex;flex-direction:column}
+    /* Info: grilla 2 columnas */
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid #eee;flex-shrink:0}
+    .row{display:flex;gap:4px;align-items:baseline}
+    .lbl{color:#999;font-size:8.5px;white-space:nowrap;flex-shrink:0}
+    .val{font-weight:700;font-size:9px;word-break:break-word}
 
-    .sec-title{font-size:8px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;flex-shrink:0}
-    .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:2px 0}
-    .lbl{color:#888;font-size:10px;white-space:nowrap}
-    .val{font-weight:700;font-size:10.5px;text-align:right;word-break:break-word}
-
-    /* Tabla billetes */
-    table{width:100%;border-collapse:collapse;flex:1}
-    th{font-size:8px;color:#bbb;text-transform:uppercase;letter-spacing:1px;padding:3px 6px;border-bottom:1.5px solid #e0e0e0;text-align:left;font-weight:700}
-    th:nth-child(2){text-align:center}
-    th:nth-child(3){text-align:right}
-    td{padding:4px 6px;border-bottom:1px solid #f2f2f2;font-size:10.5px}
+    /* Tabla */
+    .sec-title{font-size:7px;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:2px;margin-bottom:2px;flex-shrink:0}
+    table{width:100%;border-collapse:collapse;flex-shrink:1}
+    th{font-size:7.5px;color:#bbb;text-transform:uppercase;letter-spacing:1px;padding:2px 5px;border-bottom:1px solid #ddd;text-align:left;font-weight:700}
+    th:nth-child(2){text-align:center}th:nth-child(3){text-align:right}
+    td{padding:2px 5px;border-bottom:1px solid #f5f5f5;font-size:9px}
     td:nth-child(2){text-align:center}
     td:nth-child(3){text-align:right;font-weight:600}
-    .tot-row td{padding:5px 6px;background:#111;color:#fff;font-weight:700;font-size:12px;border:none}
+    .tot-row td{padding:5px 5px 2px;background:none;color:#111;font-weight:900;font-size:14px;border:none;border-top:2px solid #111}
     .tot-row td:last-child{text-align:right}
 
     /* Firmas */
-    .firmas{display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid #e0e0e0;gap:16px;flex-shrink:0}
+    .firmas{display:flex;justify-content:space-between;padding-top:4px;border-top:1px solid #ddd;gap:14px;margin-top:auto;margin-bottom:5mm;flex-shrink:0}
     .firma{flex:1;text-align:center}
-    .fline{border-bottom:1px solid #555;height:18px;margin-bottom:4px}
-    .flbl{font-size:8.5px;color:#999;text-transform:uppercase;letter-spacing:1px}
+    .fline{border-bottom:1px solid #444;height:13px;margin-bottom:3px}
+    .flbl{font-size:7.5px;color:#aaa;text-transform:uppercase;letter-spacing:1px}
   </style>
 </head>
 <body>
+<div class="comprobante">
   <div class="hdr">
     <div class="hdr-left">
       <div class="title">ALENORT</div>
@@ -138,47 +143,48 @@ function generarHTML(
     </div>
   </div>
 
-  <div class="body">
-    <div class="info">
-      <div class="sec-title">Información del pago</div>
-      <div class="row"><span class="lbl">A:</span><span class="val">${pagoData.a}</span></div>
-      <div class="row"><span class="lbl">Responsable:</span><span class="val">${pagoData.resp}</span></div>
-      <div class="row"><span class="lbl">Categoría:</span><span class="val">${categoria}</span></div>
-      <div class="row"><span class="lbl">Método:</span><span class="val">Efectivo</span></div>
-      <div class="row"><span class="lbl">Fecha:</span><span class="val">${fechaFmt}</span></div>
-    </div>
-
-    <div class="bills">
-      <div class="sec-title">Detalle de billetes</div>
-      <table>
-        <thead><tr>
-          <th>Billete</th><th>Cant.</th><th>Subtotal</th>
-        </tr></thead>
-        <tbody>
-          ${fillasBilletes}
-          <tr class="tot-row">
-            <td colspan="2">TOTAL</td>
-            <td>${fmt(monto)}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="info-grid">
+    <div class="row"><span class="lbl">A:</span><span class="val">${pagoData.a}</span></div>
+    <div class="row"><span class="lbl">Responsable:</span><span class="val">${pagoData.resp}</span></div>
+    <div class="row"><span class="lbl">Categoría:</span><span class="val">${categoria}</span></div>
+    <div class="row"><span class="lbl">Método:</span><span class="val">Efectivo</span></div>
+    <div class="row"><span class="lbl">Fecha:</span><span class="val">${fechaFmt}</span></div>
   </div>
+
+  <div class="sec-title">Detalle de billetes</div>
+  <table>
+    <thead><tr>
+      <th>Billete</th><th>Cant.</th><th>Subtotal</th>
+    </tr></thead>
+    <tbody>
+      ${fillasBilletes}
+      <tr class="tot-row">
+        <td colspan="2">TOTAL</td>
+        <td>${fmt(monto)}</td>
+      </tr>
+    </tbody>
+  </table>
 
   <div class="firmas">
     <div class="firma"><div class="fline"></div><div class="flbl">Entregado por</div></div>
     <div class="firma"><div class="fline"></div><div class="flbl">Recibido por — ${pagoData.a}</div></div>
   </div>
+</div>
 </body>
 </html>`;
 }
 
 function abrirVentanaImpresion(html: string) {
-  const win = window.open('', '_blank', 'width=820,height=960');
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
   if (!win) return;
-  win.document.write(html);
-  win.document.close();
-  setTimeout(() => win.print(), 600);
+  win.addEventListener('load', () => {
+    setTimeout(() => {
+      win.print();
+      URL.revokeObjectURL(url);
+    }, 400);
+  });
 }
 
 export default function SistemaPagos() {
@@ -435,9 +441,9 @@ export default function SistemaPagos() {
                 </div>
 
                 {/* Total */}
-                <div className="px-5 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                <div className="px-5 py-4 bg-gray-50 border-t-2 border-gray-900 flex items-center justify-between">
                   <span className="text-sm font-bold text-gray-600 uppercase tracking-wide">Total a pagar</span>
-                  <span className={`text-2xl font-extrabold tabular-nums ${total > 0 ? 'text-violet-700' : 'text-gray-300'}`}>
+                  <span className={`text-3xl font-black tabular-nums ${total > 0 ? 'text-gray-900' : 'text-gray-300'}`}>
                     {fmt(total)}
                   </span>
                 </div>

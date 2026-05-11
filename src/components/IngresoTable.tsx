@@ -179,7 +179,7 @@ export default function IngresoTable({ ingresos, onRefresh }: Props) {
                           {i.monto > UMBRAL_ALERTA && <AlertCircle size={12} className="inline text-red-500 ml-1" />}
                         </td>
                         <td className={`px-4 py-3 font-medium ${colorMetodo(i.metodo_pago)}`}>{i.metodo_pago}</td>
-                        <td className="px-4 py-3 text-gray-400 text-xs max-w-xs truncate">{i.notas || <span className="italic">—</span>}</td>
+                        <td className="px-4 py-3 text-gray-700 text-xs font-bold max-w-xs truncate">{i.notas || <span className="italic font-normal text-gray-400">—</span>}</td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
                             <button onClick={() => startEditing(i)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700"><Edit size={14} /></button>
