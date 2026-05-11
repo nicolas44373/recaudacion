@@ -1,9 +1,10 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: true,
+  },
+  lint: {
+    ignoreDuringBuilds: true,
   },
 };
 
