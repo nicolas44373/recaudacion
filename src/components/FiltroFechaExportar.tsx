@@ -18,8 +18,8 @@ interface Item {
 interface Props {
   desde: string;
   hasta: string;
-  setDesde: (v: string) => void;
-  setHasta: (v: string) => void;
+  setDesde: (_: string) => void;
+  setHasta: (_: string) => void;
   datos: Item[];
   tipo: 'ingresos' | 'gastos';
 }

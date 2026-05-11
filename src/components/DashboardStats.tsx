@@ -113,7 +113,7 @@ export default function DashboardStats({ estadisticas, desde, hasta }: Props) {
   const {
     totalHoy, egresosHoy, dineroHoy, inicioDia,
     totalTarjetaTransferencia, dineroGlobalHoy,
-    totalMes, totalGastosMes, totalSemana, promedioIngreso,
+    totalMes, totalGastosMes, totalSemana,
   } = estadisticas;
 
   const fechaDesde = format(parseISO(desde), 'dd/MM/yy');

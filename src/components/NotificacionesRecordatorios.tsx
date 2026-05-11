@@ -5,7 +5,7 @@ import {
   Bell, AlertTriangle, Clock, CheckCircle,
   ChevronDown, ChevronUp, CalendarClock, X,
 } from 'lucide-react';
-import { format, parseISO, differenceInHours, differenceInMinutes, addDays, isBefore, isAfter } from 'date-fns';
+import { format, parseISO, differenceInHours, differenceInMinutes, addDays, isBefore } from 'date-fns';
 
 interface Recordatorio {
   id: string;

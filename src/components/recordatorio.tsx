@@ -3,11 +3,11 @@ import { useState, useEffect, useCallback, FormEvent } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   Bell, CheckCircle, Clock, AlertTriangle, CalendarClock,
-  Plus, Trash2, RotateCcw, ChevronDown, ChevronUp, X, Calendar,
+  Plus, Trash2, RotateCcw, X, Calendar,
 } from 'lucide-react';
 import {
   format, parseISO, differenceInHours, differenceInMinutes,
-  addDays, isBefore, isAfter,
+  addDays, isBefore,
 } from 'date-fns';
 
 interface Recordatorio {
@@ -297,7 +297,7 @@ export default function RecordatoriosPage() {
              'Sin completados'}
           </p>
           {filtro === 'todos' && (
-            <p className="text-gray-600 text-sm">Presioná "Nuevo" para agregar uno</p>
+            <p className="text-gray-600 text-sm">Presioná &quot;Nuevo&quot; para agregar uno</p>
           )}
         </div>
       ) : (

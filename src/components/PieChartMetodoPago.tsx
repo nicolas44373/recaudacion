@@ -30,7 +30,7 @@ export default function PieChartMetodoPago({ datos }: { datos: any[] }) {
               outerRadius={90}
               innerRadius={45}
               dataKey="value"
-              label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+              label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
               labelLine={false}
             >
               {datos.map((entry, i) => (

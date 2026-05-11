@@ -79,7 +79,7 @@ export default function NavigationBar({
   setVistaActual,
 }: {
   vistaActual: string;
-  setVistaActual: (vista: Vista) => void;
+  setVistaActual: (_: Vista) => void;
 }) {
   return (
     <nav className="bg-gray-900 border-b border-gray-700/80 sticky top-0 z-40 shadow-xl">
