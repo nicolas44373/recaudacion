@@ -1,36 +1,54 @@
-// components/PieChartMetodoPago.tsx
 'use client';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
+const COLORES: Record<string, string> = {
+  Efectivo: '#10b981',
+  Tarjeta: '#3b82f6',
+  Transferencia: '#f59e0b',
+  'Depósito': '#8b5cf6',
+  Cheque: '#ec4899',
+  eCheq: '#06b6d4',
+};
+const COLOR_DEFAULT = '#6b7280';
+
+const fmtTooltip = (value: number) =>
+  value.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
 
 export default function PieChartMetodoPago({ datos }: { datos: any[] }) {
-  const colores: Record<string, string> = {
-    contado: '#10b981',
-    tarjeta: '#3b82f6',
-    transferencia: '#f59e0b'
-  };
+  const total = datos.reduce((s, d) => s + d.value, 0);
 
   return (
-    <div className="bg-gray-800 p-4 rounded-lg mb-8">
-      <h2 className="text-lg sm:text-xl font-semibold mb-4">Distribución por Método de Pago</h2>
-      <div className="h-60 sm:h-80">
+    <div className="bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-md">
+      <h2 className="text-base font-semibold text-white mb-4">Distribución por Método de Pago</h2>
+      <div className="h-64 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={datos}
               cx="50%"
               cy="50%"
-              labelLine={false}
-              outerRadius={80}
-              innerRadius={0}
-              fill="#8884d8"
+              outerRadius={90}
+              innerRadius={45}
               dataKey="value"
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+              labelLine={false}
             >
-              {datos.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={colores[entry.name] || '#8884d8'} />
+              {datos.map((entry, i) => (
+                <Cell key={`cell-${i}`} fill={COLORES[entry.name] ?? COLOR_DEFAULT} />
               ))}
             </Pie>
-            <Tooltip formatter={(value: number) => [`$${value.toFixed(2)}`, '']} />
+            <Tooltip
+              contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }}
+              labelStyle={{ color: '#e5e7eb' }}
+              formatter={(value: number, name: string) => [
+                `${fmtTooltip(value)} (${total > 0 ? ((value / total) * 100).toFixed(1) : 0}%)`,
+                name,
+              ]}
+            />
+            <Legend
+              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+              formatter={(value) => <span style={{ color: '#d1d5db' }}>{value}</span>}
+            />
           </PieChart>
         </ResponsiveContainer>
       </div>

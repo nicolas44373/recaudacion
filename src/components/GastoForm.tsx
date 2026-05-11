@@ -1,151 +1,380 @@
 'use client';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { AlertCircle, MinusCircle } from 'lucide-react';
+import {
+  AlertCircle, CheckCircle, ChevronDown, ChevronUp,
+  X, MinusCircle, Calculator,
+} from 'lucide-react';
+import { format } from 'date-fns';
 
-const METODOS_PAGO = ["Efectivo", "Transferencia", "Depósito", "Cheque", "eCheq"];
-const CATEGORIAS = [
-  "CUENTA GALICIA JULITO", "CUENTA GALICIA ROCIO", "CUENTA MERCADO PAGO", "TRANSFERENCIAS FINANCIERAS",
-  "CHEQUES FINANCIEROS", "CHEQUES DE LEO FINANCISTA", "SUELDOS FIJOS", "SUELDOS TEMPORALES",
-  "LIMPIEZA", "BOLSAS", "DESAYUNO", "COMBUSTIBLE", "ROCIO PERSONAL", "JULITO PERSONAL", "JULIO PERSONAL",
-  "ELI PERSONAL", "CASA", "MARKETING", "SEGURIDAD", "ALMUERZO", "LIBRERIA", "HORAS EXTRA", "GASTOS EXTRA",
-  "TAXI/UBER", "SUPER", "SERVICIOS", "PAGO TARJETA", "PAGO PROVEEDORES", "MUNICIPALES",
-  "MANTENIMIENTO JURAMENTO", "MANTENIMIENTO COLON", "MANTENIMIENTO JUAN B JUSTO", "MANTENIMIENTO DE VEHICULOS",
-  "ALQUILER", "IMPUESTOS", "COSTOS FINANCIEROS", "TARJETA", "PUERTOS DE FRIO", "LEO", "FINANCIERA",
-  "DEPOSITO EN CUENTA", "HONORARIOS", "GASTOS EMPLEADOS","PRODUCCION", "FALTANTES", "COMISIONES DE VENTA"
+const UMBRAL_ALERTA = 5_000_000;
+
+// Categorías agrupadas
+const GRUPOS_CATEGORIAS: Record<string, string[]> = {
+  'PERSONAL / SUELDOS': [
+    'SUELDOS FIJOS', 'SUELDOS TEMPORALES', 'HORAS EXTRA',
+    'ROCIO PERSONAL', 'JULITO PERSONAL', 'JULIO PERSONAL', 'ELI PERSONAL', 'LEO',
+    'GASTOS EMPLEADOS', 'COMISIONES DE VENTA',
+  ],
+  'OPERACIONES DIARIAS': [
+    'DESAYUNO', 'ALMUERZO', 'LIMPIEZA', 'BOLSAS', 'COMBUSTIBLE',
+    'TAXI/UBER', 'SUPER', 'LIBRERIA', 'MARKETING', 'SEGURIDAD',
+    'GASTOS EXTRA', 'PRODUCCION',
+  ],
+  'MANTENIMIENTO': [
+    'MANTENIMIENTO JURAMENTO', 'MANTENIMIENTO COLON',
+    'MANTENIMIENTO JUAN B JUSTO', 'MANTENIMIENTO DE VEHICULOS',
+    'CASA', 'ALQUILER',
+  ],
+  'FINANCIERO': [
+    'CUENTA GALICIA JULITO', 'CUENTA GALICIA ROCIO', 'CUENTA MERCADO PAGO',
+    'TRANSFERENCIAS FINANCIERAS', 'CHEQUES FINANCIEROS', 'CHEQUES DE LEO FINANCISTA',
+    'COSTOS FINANCIEROS', 'PAGO TARJETA', 'TARJETA', 'DEPOSITO EN CUENTA', 'FINANCIERA',
+  ],
+  'OBLIGACIONES': [
+    'IMPUESTOS', 'MUNICIPALES', 'SERVICIOS', 'HONORARIOS',
+    'ALQUILER', 'PUERTOS DE FRIO',
+  ],
+  'PROVEEDORES': [
+    'PAGO PROVEEDORES', 'FALTANTES',
+  ],
+};
+
+// Lista plana para el select sin grupos (fallback)
+const TODAS_CATEGORIAS = [
+  'ALQUILER', 'BOLSAS', 'CASA', 'CHEQUES DE LEO FINANCISTA', 'CHEQUES FINANCIEROS',
+  'COMBUSTIBLE', 'COMISIONES DE VENTA', 'COSTOS FINANCIEROS', 'CUENTA GALICIA JULITO',
+  'CUENTA GALICIA ROCIO', 'CUENTA MERCADO PAGO', 'DEPOSITO EN CUENTA', 'DESAYUNO',
+  'ELI PERSONAL', 'FALTANTES', 'FINANCIERA', 'GASTOS EMPLEADOS', 'GASTOS EXTRA',
+  'HONORARIOS', 'HORAS EXTRA', 'IMPUESTOS', 'JULIO PERSONAL', 'JULITO PERSONAL',
+  'LEO', 'LIBRERIA', 'LIMPIEZA', 'MANTENIMIENTO COLON', 'MANTENIMIENTO DE VEHICULOS',
+  'MANTENIMIENTO JUAN B JUSTO', 'MANTENIMIENTO JURAMENTO', 'MARKETING', 'MUNICIPALES',
+  'PAGO PROVEEDORES', 'PAGO TARJETA', 'PRODUCCION', 'PUERTOS DE FRIO', 'ROCIO PERSONAL',
+  'SEGURIDAD', 'SERVICIOS', 'SUELDOS FIJOS', 'SUELDOS TEMPORALES', 'SUPER', 'TARJETA',
+  'TAXI/UBER', 'TRANSFERENCIAS FINANCIERAS', 'ALMUERZO',
 ];
 
-const DENOMINACIONES = [10, 20, 50, 100, 200, 500, 1000, 2000, 10000, 20000];
-const UMBRAL_ALERTA = 5000000;
+const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Depósito', 'Tarjeta', 'Cheque', 'eCheq'];
+
+const DENOMINACIONES = [
+  { valor: 50,    color: 'text-cyan-400',   ring: 'focus:ring-cyan-500',   border: 'border-cyan-500/40',   bg: 'bg-cyan-500/10'    },
+  { valor: 100,   color: 'text-red-400',    ring: 'focus:ring-red-500',    border: 'border-red-500/40',    bg: 'bg-red-500/10'     },
+  { valor: 200,   color: 'text-orange-400', ring: 'focus:ring-orange-500', border: 'border-orange-500/40', bg: 'bg-orange-500/10'  },
+  { valor: 500,   color: 'text-violet-400', ring: 'focus:ring-violet-500', border: 'border-violet-500/40', bg: 'bg-violet-500/10'  },
+  { valor: 1000,  color: 'text-blue-400',   ring: 'focus:ring-blue-500',   border: 'border-blue-500/40',   bg: 'bg-blue-500/10'    },
+  { valor: 2000,  color: 'text-emerald-400',ring: 'focus:ring-emerald-500',border: 'border-emerald-500/40',bg: 'bg-emerald-500/10' },
+  { valor: 10000, color: 'text-teal-400',   ring: 'focus:ring-teal-500',   border: 'border-teal-500/40',   bg: 'bg-teal-500/10'    },
+  { valor: 20000, color: 'text-pink-400',   ring: 'focus:ring-pink-500',   border: 'border-pink-500/40',   bg: 'bg-pink-500/10'    },
+];
+
+const fmt = (n: number) =>
+  n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
   const [categoria, setCategoria] = useState('');
-  const [monto, setMonto] = useState('');
-  const [metodo, setMetodo] = useState('');
+  const [metodoPago, setMetodoPago] = useState('');
+  const [montoRaw, setMontoRaw] = useState('');
   const [notas, setNotas] = useState('');
-  const [montoEsAlto, setMontoEsAlto] = useState(false);
-  const [billetes, setBilletes] = useState<Record<number, number>>({});
+  const [fecha, setFecha] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [denominaciones, setDenominaciones] = useState<Record<number, string>>({});
+  const [mostrarBilletes, setMostrarBilletes] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [toast, setToast] = useState<{ tipo: 'ok' | 'err'; msg: string } | null>(null);
+  const [errores, setErrores] = useState<Record<string, string>>({});
 
-  const validarMonto = (valor: string) => {
-    setMonto(valor);
-    setMontoEsAlto(parseFloat(valor) > UMBRAL_ALERTA);
+  const montoNum = parseInt(montoRaw || '0', 10);
+  const montoDisplay = montoRaw ? montoNum.toLocaleString('es-AR') : '';
+  const montoEsAlto = montoNum > UMBRAL_ALERTA;
+
+  const totalBilletes = DENOMINACIONES.reduce(
+    (acc, d) => acc + parseInt(denominaciones[d.valor] || '0', 10) * d.valor,
+    0
+  );
+
+  const showToast = (tipo: 'ok' | 'err', msg: string) => {
+    setToast({ tipo, msg });
+    setTimeout(() => setToast(null), 3500);
   };
 
-  const calcularTotalBilletes = () => {
-    return DENOMINACIONES.reduce((total, denom) => {
-      const cantidad = billetes[denom] || 0;
-      return total + denom * cantidad;
-    }, 0);
+  const handleMontoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '').replace(/^0+(\d)/, '$1');
+    setMontoRaw(raw);
+    if (raw) setErrores(p => ({ ...p, monto: '' }));
   };
 
-  const resetearFormulario = () => {
+  const usarTotalBilletes = () => {
+    if (totalBilletes > 0) setMontoRaw(String(totalBilletes));
+  };
+
+  const setDen = (valor: number, qty: string) => {
+    setDenominaciones(p => ({ ...p, [valor]: qty.replace(/\D/g, '') }));
+  };
+
+  const validar = () => {
+    const e: Record<string, string> = {};
+    if (!categoria) e.categoria = 'Seleccioná una categoría';
+    if (!metodoPago) e.metodoPago = 'Seleccioná un método de pago';
+    if (!montoRaw || montoNum <= 0) e.monto = 'Ingresá un monto válido';
+    setErrores(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const limpiar = () => {
     setCategoria('');
-    setMonto('');
-    setMetodo('');
+    setMetodoPago('');
+    setMontoRaw('');
     setNotas('');
-    setMontoEsAlto(false);
-    setBilletes({});
+    setFecha(format(new Date(), 'yyyy-MM-dd'));
+    setDenominaciones({});
+    setMostrarBilletes(false);
+    setErrores({});
   };
 
-  const agregarGasto = async () => {
-    if (!categoria) return alert('Selecciona una categoría');
-    if (!monto || parseFloat(monto) <= 0) return alert('Ingresa un monto válido');
-    if (!metodo) return alert('Selecciona un método de pago');
+  const guardar = async () => {
+    if (!validar()) return;
+    if (montoEsAlto && !confirm(`El monto ${fmt(montoNum)} es alto. ¿Confirmás?`)) return;
 
-    if (montoEsAlto) {
-      const confirmar = window.confirm(`El monto $${monto} es muy alto. ¿Está seguro que desea continuar?`);
-      if (!confirmar) return;
-    }
-
+    setGuardando(true);
     const { error } = await supabase.from('gastos').insert({
       categoria,
-      monto: parseFloat(monto),
-      metodo_pago: metodo,
-      notas: notas || null,
+      monto: montoNum,
+      metodo_pago: metodoPago,
+      notas: notas.trim() || null,
+      fecha: new Date(fecha + 'T12:00:00').toISOString(),
     });
+    setGuardando(false);
 
     if (!error) {
-      resetearFormulario();
+      showToast('ok', 'Egreso guardado correctamente');
+      limpiar();
       onSuccess();
-      alert('Gasto guardado correctamente');
     } else {
-      alert(`Error: ${error.message}`);
+      showToast('err', `Error: ${error.message}`);
     }
   };
 
   return (
-    <div className="bg-gray-800 p-4 sm:p-6 rounded-lg max-w-2xl mx-auto mb-8">
-      <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Registrar Nuevo Gasto</h2>
-      <div className="space-y-4">
+    <div className="max-w-2xl mx-auto space-y-4 pb-8">
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white text-sm font-medium ${toast.tipo === 'ok' ? 'bg-emerald-600' : 'bg-red-600'}`}>
+          {toast.tipo === 'ok' ? <CheckCircle size={17} /> : <AlertCircle size={17} />}
+          <span>{toast.msg}</span>
+          <button onClick={() => setToast(null)} className="ml-1 opacity-70 hover:opacity-100"><X size={15} /></button>
+        </div>
+      )}
+
+      {/* Encabezado */}
+      <div className="rounded-xl p-5 border bg-gray-800 border-gray-700 flex items-center gap-4">
+        <div className="p-3 rounded-xl bg-red-500/20">
+          <MinusCircle size={24} className="text-red-400" />
+        </div>
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">Categoría</label>
-          <select className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-            <option value="">Selecciona categoría</option>
-            {CATEGORIAS.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
+          <h2 className="text-xl font-bold text-white">Nuevo Egreso</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Registrá un gasto o salida de dinero</p>
+        </div>
+      </div>
+
+      {/* Cuerpo del formulario */}
+      <div className="rounded-xl border bg-gray-800 border-gray-700 p-5 space-y-5">
+
+        {/* Categoría con grupos */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Categoría <span className="text-red-400">*</span>
+          </label>
+          <select
+            value={categoria}
+            onChange={e => { setCategoria(e.target.value); setErrores(p => ({ ...p, categoria: '' })); }}
+            className={`w-full p-3 bg-gray-700 border rounded-xl text-white text-sm focus:outline-none focus:ring-2 transition-colors ${errores.categoria ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-red-500 hover:border-gray-500'}`}
+          >
+            <option value="">— Seleccioná una categoría —</option>
+            {Object.entries(GRUPOS_CATEGORIAS).map(([grupo, cats]) => (
+              <optgroup key={grupo} label={grupo}>
+                {cats.map(c => <option key={c} value={c}>{c}</option>)}
+              </optgroup>
+            ))}
           </select>
+          {errores.categoria && <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.categoria}</p>}
         </div>
 
+        {/* Método de pago – botones */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">Método de Pago</label>
-          <select className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600" value={metodo} onChange={(e) => setMetodo(e.target.value)}>
-            <option value="">Selecciona método</option>
-            {METODOS_PAGO.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Método de Pago <span className="text-red-400">*</span>
+          </label>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {METODOS_PAGO.map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => {
+                  setMetodoPago(m);
+                  setMostrarBilletes(m === 'Efectivo');
+                  setErrores(p => ({ ...p, metodoPago: '' }));
+                }}
+                className={`py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all duration-150 ${metodoPago === m
+                  ? 'bg-red-600 border-red-500 text-white shadow-md'
+                  : 'bg-gray-700 border-gray-600 text-gray-400 hover:text-white hover:border-gray-500'
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+          {errores.metodoPago && <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.metodoPago}</p>}
         </div>
 
-        {metodo === 'Efectivo' && (
-          <div className="bg-gray-700 p-3 rounded-lg">
-            <p className="text-sm font-medium text-gray-300 mb-2">Denominaciones</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {DENOMINACIONES.map((denom) => (
-                <div key={denom} className="flex items-center space-x-2">
-                  <label className="text-gray-300 w-12">${denom}</label>
-                  <input
-                    type="number"
-                    className="w-full p-1 rounded bg-gray-800 border border-gray-600 text-sm"
-                    min="0"
-                    value={billetes[denom] || ''}
-                    onChange={(e) => setBilletes({ ...billetes, [denom]: parseInt(e.target.value) || 0 })}
-                  />
+        {/* Calculadora de billetes (solo Efectivo) */}
+        {metodoPago === 'Efectivo' && (
+          <div className="rounded-xl border border-gray-600 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setMostrarBilletes(!mostrarBilletes)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-700/50 hover:bg-gray-700 transition-colors text-sm font-medium text-gray-300"
+            >
+              <div className="flex items-center gap-2">
+                <Calculator size={15} className="text-gray-400" />
+                <span>Contar billetes</span>
+              </div>
+              <div className="flex items-center gap-3">
+                {totalBilletes > 0 && (
+                  <span className="text-red-400 text-xs font-bold">{fmt(totalBilletes)}</span>
+                )}
+                {mostrarBilletes ? <ChevronUp size={15} className="text-gray-400" /> : <ChevronDown size={15} className="text-gray-400" />}
+              </div>
+            </button>
+
+            {mostrarBilletes && (
+              <div className="p-4 border-t border-gray-600 space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {DENOMINACIONES.map(d => {
+                    const qty = parseInt(denominaciones[d.valor] || '0', 10);
+                    const subtotal = qty * d.valor;
+                    return (
+                      <div key={d.valor} className={`rounded-xl border p-3 ${d.bg} ${d.border}`}>
+                        <div className={`text-xs font-bold mb-2 ${d.color}`}>
+                          {d.valor.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 })}
+                        </div>
+                        <input
+                          type="number"
+                          min={0}
+                          placeholder="0"
+                          value={denominaciones[d.valor] ?? ''}
+                          onChange={e => setDen(d.valor, e.target.value)}
+                          className={`w-full bg-gray-800 border border-gray-600 rounded-lg p-1.5 text-white text-sm text-center focus:outline-none focus:ring-2 ${d.ring}`}
+                        />
+                        {subtotal > 0 && (
+                          <div className="text-xs text-gray-400 mt-1.5 text-center">
+                            {subtotal.toLocaleString('es-AR')}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-            <p className="mt-2 text-sm text-gray-400">Total calculado: <span className="text-green-400 font-semibold">${calcularTotalBilletes().toLocaleString()}</span></p>
+
+                {/* Total de billetes */}
+                <div className="flex items-center justify-between p-4 bg-gray-900/60 rounded-xl border border-gray-600">
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">Total contado</p>
+                    <p className={`text-2xl font-bold tabular-nums ${totalBilletes > 0 ? 'text-red-400' : 'text-gray-600'}`}>
+                      {fmt(totalBilletes)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={usarTotalBilletes}
+                    disabled={totalBilletes === 0}
+                    className="bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+                  >
+                    Usar este total →
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
+
+        {/* Monto */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">Monto</label>
+          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+            Monto <span className="text-red-400">*</span>
+          </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-            <input 
-  type="text" 
-  placeholder="0.00" 
-  value={monto} 
-  onChange={(e) => {
-    // Solo permitir números y punto decimal
-    const valor = e.target.value.replace(/[^0-9.]/g, '');
-    validarMonto(valor);
-  }} 
-  className={`w-full p-2 pl-8 bg-gray-700 rounded-lg border ${montoEsAlto ? 'border-red-500' : 'border-gray-600'}`} 
-/>
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">$</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="0"
+              value={montoDisplay}
+              onChange={handleMontoChange}
+              className={`w-full pl-9 pr-4 py-4 bg-gray-700 border rounded-xl text-white text-2xl font-bold tabular-nums focus:outline-none focus:ring-2 transition-colors ${montoEsAlto ? 'border-red-500 focus:ring-red-500' : errores.monto ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-red-500 hover:border-gray-500'}`}
+            />
           </div>
+          {errores.monto && (
+            <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.monto}</p>
+          )}
           {montoEsAlto && (
-            <div className="mt-2 flex items-center text-red-500 text-xs">
-              <AlertCircle size={16} className="mr-1" /> Monto inusualmente alto. Verifica antes de guardar.
+            <div className="mt-2 flex items-center gap-2 text-red-400 text-xs bg-red-500/10 border border-red-500/30 px-3 py-2 rounded-lg">
+              <AlertCircle size={14} className="flex-shrink-0" />
+              Monto inusualmente alto. Verificá antes de guardar.
             </div>
           )}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-400 mb-1">Notas (opcional)</label>
-          <textarea placeholder="Ingrese notas..." value={notas} onChange={(e) => setNotas(e.target.value)} className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600 h-20" />
+        {/* Fecha + Notas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Fecha</label>
+            <input
+              type="date"
+              value={fecha}
+              onChange={e => setFecha(e.target.value)}
+              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500 hover:border-gray-500 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Notas (opcional)</label>
+            <textarea
+              placeholder="Observaciones adicionales..."
+              value={notas}
+              onChange={e => setNotas(e.target.value)}
+              rows={1}
+              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500 hover:border-gray-500 transition-colors resize-none"
+            />
+          </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
-          <button className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium flex items-center justify-center" onClick={agregarGasto}>
-            <MinusCircle size={18} className="mr-2" /> Guardar Gasto
+        {/* Vista previa */}
+        {categoria && metodoPago && montoNum > 0 && (
+          <div className="rounded-xl p-4 border bg-red-950/20 border-red-700/30 text-sm">
+            <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wider">Vista previa</p>
+            <div className="flex flex-wrap gap-x-6 gap-y-1">
+              <span className="text-gray-300"><span className="text-gray-500">Categoría:</span> {categoria}</span>
+              <span className="text-gray-300"><span className="text-gray-500">Método:</span> {metodoPago}</span>
+              <span className="font-bold tabular-nums text-red-400">{fmt(montoNum)}</span>
+              <span className="text-gray-300"><span className="text-gray-500">Fecha:</span> {fecha}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Botones */}
+        <div className="flex gap-3 pt-1">
+          <button
+            onClick={guardar}
+            disabled={guardando}
+            className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white transition-all shadow-md ${guardando ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-600 hover:bg-red-500 active:scale-95'}`}
+          >
+            <MinusCircle size={18} />
+            {guardando ? 'Guardando...' : 'Guardar Egreso'}
           </button>
-          <button className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg font-medium" onClick={resetearFormulario}>
+          <button
+            onClick={limpiar}
+            disabled={guardando}
+            className="px-5 py-3.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-xl font-semibold transition-colors"
+          >
             Limpiar
           </button>
         </div>

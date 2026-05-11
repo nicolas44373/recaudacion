@@ -1,80 +1,126 @@
 'use client';
-import { DollarSign, Bell } from 'lucide-react';
+import {
+  LayoutDashboard, TrendingUp, TrendingDown,
+  PlusCircle, MinusCircle, Bell, DollarSign, Banknote,
+} from 'lucide-react';
 
-export default function NavigationBar({ vistaActual, setVistaActual }: { vistaActual: string; setVistaActual: (vista: any) => void }) {
+type Vista = 'dashboard' | 'contador' | 'ingresos' | 'formulario' | 'gastos' | 'nuevo-gasto' | 'recordatorios';
+
+interface NavItem {
+  vista: Vista;
+  label: string;
+  labelShort: string;
+  icon: React.ElementType;
+  color: string;
+  activeClass: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    vista: 'dashboard',
+    label: 'Dashboard',
+    labelShort: 'Inicio',
+    icon: LayoutDashboard,
+    color: 'text-blue-400',
+    activeClass: 'bg-blue-600 text-white border-blue-500',
+  },
+  {
+    vista: 'contador',
+    label: 'Contar Caja',
+    labelShort: 'Caja',
+    icon: Banknote,
+    color: 'text-emerald-400',
+    activeClass: 'bg-emerald-800 text-white border-emerald-600',
+  },
+  {
+    vista: 'ingresos',
+    label: 'Ver Ingresos',
+    labelShort: 'Ingresos',
+    icon: TrendingUp,
+    color: 'text-emerald-400',
+    activeClass: 'bg-emerald-600 text-white border-emerald-500',
+  },
+  {
+    vista: 'formulario',
+    label: 'Nuevo Ingreso',
+    labelShort: '+ Ingreso',
+    icon: PlusCircle,
+    color: 'text-emerald-400',
+    activeClass: 'bg-emerald-700 text-white border-emerald-600',
+  },
+  {
+    vista: 'gastos',
+    label: 'Ver Egresos',
+    labelShort: 'Egresos',
+    icon: TrendingDown,
+    color: 'text-red-400',
+    activeClass: 'bg-red-600 text-white border-red-500',
+  },
+  {
+    vista: 'nuevo-gasto',
+    label: 'Nuevo Egreso',
+    labelShort: '+ Egreso',
+    icon: MinusCircle,
+    color: 'text-red-400',
+    activeClass: 'bg-red-700 text-white border-red-600',
+  },
+  {
+    vista: 'recordatorios',
+    label: 'Recordatorios',
+    labelShort: 'Notas',
+    icon: Bell,
+    color: 'text-amber-400',
+    activeClass: 'bg-amber-600 text-white border-amber-500',
+  },
+];
+
+export default function NavigationBar({
+  vistaActual,
+  setVistaActual,
+}: {
+  vistaActual: string;
+  setVistaActual: (vista: Vista) => void;
+}) {
   return (
-    <nav className="bg-gradient-to-r from-pink-200 via-pink-100 to-rose-100 p-6 shadow-xl">
-      <div className="flex flex-col sm:flex-row justify-between items-center">
-        <div className="flex items-center mb-6 sm:mb-0">
-          <div className="bg-pink-300/30 backdrop-blur-sm p-3 rounded-xl mr-4">
-            <DollarSign className="text-pink-800 drop-shadow-lg" size={28} />
+    <nav className="bg-gray-900 border-b border-gray-700/80 sticky top-0 z-40 shadow-xl">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-14 gap-4">
+
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 flex-shrink-0">
+            <div className="bg-emerald-500/15 p-1.5 rounded-lg">
+              <DollarSign size={18} className="text-emerald-400" />
+            </div>
+            <div className="hidden sm:block leading-tight">
+              <p className="text-sm font-bold text-white tracking-tight">Recaudación</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Sistema de caja</p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold text-pink-800 drop-shadow-lg tracking-wide">
-            Sistema de Ingresos
-          </h1>
-        </div>
-        <div className="flex flex-wrap justify-center gap-3 sm:gap-2">
-          <button
-            className={`px-4 py-3 text-xs sm:text-sm rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
-              vistaActual === 'dashboard' 
-                ? 'bg-pink-600 text-white shadow-lg' 
-                : 'bg-pink-300/30 text-pink-800 backdrop-blur-sm hover:bg-pink-400/40 hover:shadow-lg'
-            }`}
-            onClick={() => setVistaActual('dashboard')}
-          >
-            Dashboard
-          </button>
-          <button
-            className={`px-4 py-3 text-xs sm:text-sm rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
-              vistaActual === 'ingresos' 
-                ? 'bg-pink-600 text-white shadow-lg' 
-                : 'bg-pink-300/30 text-pink-800 backdrop-blur-sm hover:bg-pink-400/40 hover:shadow-lg'
-            }`}
-            onClick={() => setVistaActual('ingresos')}
-          >
-            Ver Ingresos
-          </button>
-          <button
-            className={`px-4 py-3 text-xs sm:text-sm rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
-              vistaActual === 'formulario' 
-                ? 'bg-pink-600 text-white shadow-lg' 
-                : 'bg-pink-300/30 text-pink-800 backdrop-blur-sm hover:bg-pink-400/40 hover:shadow-lg'
-            }`}
-            onClick={() => setVistaActual('formulario')}
-          >
-            Nuevo Ingreso
-          </button>
-          <button
-            className={`px-4 py-3 text-xs sm:text-sm rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
-              vistaActual === 'gastos' 
-                ? 'bg-pink-600 text-white shadow-lg' 
-                : 'bg-pink-300/30 text-pink-800 backdrop-blur-sm hover:bg-pink-400/40 hover:shadow-lg'
-            }`}
-            onClick={() => setVistaActual('gastos')}
-          >
-            Ver Egresos
-          </button>
-          <button
-            className={`px-6 py-3 text-sm sm:text-base rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
-              vistaActual === 'nuevo-gasto' 
-? 'bg-pink-600 text-white shadow-lg' 
-                : 'bg-pink-300/30 text-pink-800 backdrop-blur-sm hover:bg-pink-400/40 hover:shadow-lg'
-            }`}
-            onClick={() => setVistaActual('nuevo-gasto')}
-          >
-            Nuevo Egreso
-          </button>
-          <button
-            className={`px-6 py-3 text-sm sm:text-base rounded-xl font-medium transition-all duration-300 transform hover:scale-105 ${
-              vistaActual === 'recordatorios' 
-? 'bg-pink-600 text-white shadow-lg' 
-                : 'bg-pink-300/30 text-pink-800 backdrop-blur-sm hover:bg-pink-400/40 hover:shadow-lg'
-            }`}
-            onClick={() => setVistaActual('recordatorios')}
-          >
-            <Bell className="inline mr-2" size={18} />
-            Recordatorios
-          </button>
+
+          {/* Nav items – scroll horizontal en mobile */}
+          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1 justify-end">
+            {NAV_ITEMS.map(({ vista, label, labelShort, icon: Icon, color, activeClass }) => {
+              const isActive = vistaActual === vista;
+              return (
+                <button
+                  key={vista}
+                  onClick={() => setVistaActual(vista)}
+                  className={`
+                    flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold
+                    border transition-all duration-150 whitespace-nowrap flex-shrink-0
+                    ${isActive
+                      ? activeClass
+                      : `bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-800`
+                    }
+                  `}
+                >
+                  <Icon size={14} className={isActive ? 'text-white' : color} />
+                  <span className="hidden md:inline">{label}</span>
+                  <span className="md:hidden">{labelShort}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </nav>

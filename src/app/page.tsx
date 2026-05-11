@@ -1,4 +1,3 @@
-// src/app/dashboard/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,18 +15,23 @@ import IngresoForm from '@/components/IngresoForm';
 import GastoTable from '@/components/GastoTable';
 import GastoForm from '@/components/GastoForm';
 import RecordatoriosPage from '@/components/recordatorio';
+import NotificacionesRecordatorios from '@/components/NotificacionesRecordatorios';
+import ContadorBilletes from '@/components/ContadorBilletes';
 import {
   prepararDatosPorCaja,
   prepararDatosPorMes,
   prepararDatosPorMetodo,
 } from '@/components/helpers';
 
+const CATEGORIA_INICIO_DIA = 'INICIO DEL DIA';
+
 export default function DashboardPage() {
-  const [vistaActual, setVistaActual] = useState<'dashboard' | 'ingresos' | 'formulario' | 'gastos' | 'nuevo-gasto' | 'recordatorios'>('dashboard');
+  const [vistaActual, setVistaActual] = useState<'dashboard' | 'contador' | 'ingresos' | 'formulario' | 'gastos' | 'nuevo-gasto' | 'recordatorios'>('dashboard');
   const [desde, setDesde] = useState(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [hasta, setHasta] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [ingresos, setIngresos] = useState<any[]>([]);
   const [gastos, setGastos] = useState<any[]>([]);
+  const [cargando, setCargando] = useState(false);
   const [estadisticas, setEstadisticas] = useState({
     totalHoy: 0,
     totalMes: 0,
@@ -39,81 +43,61 @@ export default function DashboardPage() {
     dineroHoy: 0,
     totalTarjetaTransferencia: 0,
     dineroGlobalHoy: 0,
+    inicioDia: 0,
   });
 
-  const cargarIngresos = async () => {
-    let query = supabase.from('ingresos').select('*');
-    if (desde) query = query.gte('fecha', desde);
-    if (hasta) query = query.lte('fecha', hasta + 'T23:59:59');
-    const { data } = await query.order('fecha', { ascending: false });
-    if (data) {
-      setIngresos(data);
-      calcularEstadisticas(data, gastos);
-    }
-  };
-
-  const cargarGastos = async () => {
-    let query = supabase.from('gastos').select('*');
-    if (desde) query = query.gte('fecha', desde);
-    if (hasta) query = query.lte('fecha', hasta + 'T23:59:59');
-    const { data } = await query.order('fecha', { ascending: false });
-    if (data) {
-      setGastos(data);
-      calcularEstadisticas(ingresos, data);
-    }
-  };
-
-  const calcularEstadisticas = (ingresosData: any[], gastosData: any[]) => {
-    const hastaDate = parseISO(hasta);
+  const calcularEstadisticas = (ingresosData: any[], gastosData: any[], fechaHasta: string) => {
+    const hastaDate = parseISO(fechaHasta);
     const hoy = format(hastaDate, 'yyyy-MM-dd');
     const inicioSemana = format(subDays(hastaDate, 6), 'yyyy-MM-dd');
     const inicioMes = format(new Date(hastaDate.getFullYear(), hastaDate.getMonth(), 1), 'yyyy-MM-dd');
 
-    const ingresosHoyEfectivo = ingresosData.filter(
-      (ing) => ing.fecha.startsWith(hoy) && ing.metodo_pago === 'Efectivo'
-    );
-
-    const egresosHoyEfectivo = gastosData.filter(
-      (g) => g.fecha.startsWith(hoy) && g.metodo_pago === 'Efectivo'
-    );
-
-    const totalHoy = ingresosHoyEfectivo.reduce((sum, ing) => sum + Number(ing.monto), 0);
-    const egresosHoy = egresosHoyEfectivo.reduce((sum, g) => sum + Number(g.monto), 0);
-
-    const totalSemana = ingresosData
-      .filter((ing) => ing.fecha >= inicioSemana && ing.fecha <= hoy)
+    // Separa INICIO DEL DIA del resto de ingresos
+    const ingresosReales = ingresosData.filter(ing => ing.categoria !== CATEGORIA_INICIO_DIA);
+    const inicioDiaHoy = ingresosData
+      .filter(ing => ing.categoria === CATEGORIA_INICIO_DIA && ing.fecha.startsWith(hoy))
       .reduce((sum, ing) => sum + Number(ing.monto), 0);
 
-    const totalMes = ingresosData
-      .filter((ing) => ing.fecha >= inicioMes && ing.fecha <= hoy)
+    // Ingresos efectivo del día (sin INICIO DEL DIA)
+    const totalHoy = ingresosReales
+      .filter(ing => ing.fecha.startsWith(hoy) && ing.metodo_pago === 'Efectivo')
       .reduce((sum, ing) => sum + Number(ing.monto), 0);
 
-    const totalIngresos = ingresosData.length;
+    // Egresos efectivo del día
+    const egresosHoy = gastosData
+      .filter(g => g.fecha.substring(0, 10) === hoy && g.metodo_pago === 'Efectivo')
+      .reduce((sum, g) => sum + Number(g.monto), 0);
 
+    const totalSemana = ingresosReales
+      .filter(ing => ing.fecha >= inicioSemana && ing.fecha <= hoy)
+      .reduce((sum, ing) => sum + Number(ing.monto), 0);
+
+    const totalMes = ingresosReales
+      .filter(ing => ing.fecha >= inicioMes && ing.fecha <= hoy)
+      .reduce((sum, ing) => sum + Number(ing.monto), 0);
+
+    const totalIngresos = ingresosReales.length;
     const promedioIngreso = totalIngresos > 0
-      ? ingresosData.reduce((sum, ing) => sum + Number(ing.monto), 0) / totalIngresos
+      ? ingresosReales.reduce((sum, ing) => sum + Number(ing.monto), 0) / totalIngresos
       : 0;
 
     const totalGastosMes = gastosData
-      .filter((g) => g.fecha >= inicioMes && g.fecha <= hoy)
+      .filter(g => g.fecha.substring(0, 10) >= inicioMes && g.fecha.substring(0, 10) <= hoy)
       .reduce((sum, g) => sum + Number(g.monto), 0);
 
-    const tarjetaTransferenciaHoy = ingresosData
-      .filter(
-        (i) =>
-          i.fecha.startsWith(hoy) &&
-          (i.metodo_pago === 'Tarjeta' || i.metodo_pago === 'Transferencia')
-      )
+    const tarjetaTransferenciaHoy = ingresosReales
+      .filter(i => i.fecha.startsWith(hoy) && (i.metodo_pago === 'Tarjeta' || i.metodo_pago === 'Transferencia'))
       .reduce((sum, i) => sum + Number(i.monto), 0);
 
-    const dineroGlobalHoy = ingresosData
-      .filter((i) => i.fecha.startsWith(hoy))
+    const dineroGlobalHoy = ingresosReales
+      .filter(i => i.fecha.startsWith(hoy))
       .reduce((sum, i) => sum + Number(i.monto), 0);
 
     setEstadisticas({
       totalHoy,
       egresosHoy,
-      dineroHoy: totalHoy - egresosHoy,
+      // Neto en caja = apertura del día + ingresos efectivo - egresos efectivo
+      dineroHoy: inicioDiaHoy + totalHoy - egresosHoy,
       totalSemana,
       totalMes,
       promedioIngreso,
@@ -121,31 +105,65 @@ export default function DashboardPage() {
       totalTarjetaTransferencia: tarjetaTransferenciaHoy,
       dineroGlobalHoy,
       totalIngresos,
+      inicioDia: inicioDiaHoy,
     });
   };
 
+  const cargarDatos = async (fechaDesde: string, fechaHasta: string) => {
+    setCargando(true);
+    const [resI, resG] = await Promise.all([
+      // ingresos.fecha es tipo DATE → sin sufijo de hora
+      supabase.from('ingresos').select('*')
+        .gte('fecha', fechaDesde)
+        .lte('fecha', fechaHasta)
+        .order('fecha', { ascending: false }),
+      // gastos.fecha es tipo TIMESTAMPTZ → con rango horario completo
+      supabase.from('gastos').select('*')
+        .gte('fecha', fechaDesde + 'T00:00:00')
+        .lte('fecha', fechaHasta + 'T23:59:59')
+        .order('fecha', { ascending: false }),
+    ]);
+    const ingData = resI.data ?? [];
+    const gasData = resG.data ?? [];
+    setIngresos(ingData);
+    setGastos(gasData);
+    calcularEstadisticas(ingData, gasData, fechaHasta);
+    setCargando(false);
+  };
+
   useEffect(() => {
-    cargarIngresos();
-    cargarGastos();
+    cargarDatos(desde, hasta);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [desde, hasta]);
 
+  const refresh = () => cargarDatos(desde, hasta);
+
+  // Excluye INICIO DEL DIA de gráficos y resumen por categoría
+  const ingresosRealesParaGraficos = ingresos.filter(i => i.categoria !== CATEGORIA_INICIO_DIA);
+
   const movimientosConTipo = [
-    ...ingresos.map((i) => ({ ...i, tipo: 'ingreso' })),
-    ...gastos.map((g) => ({ ...g, tipo: 'gasto' })),
+    ...ingresosRealesParaGraficos.map(i => ({ ...i, tipo: 'ingreso' as const })),
+    ...gastos.map(g => ({ ...g, tipo: 'gasto' as const })),
   ];
 
-  const datosPorMes = prepararDatosPorMes(ingresos);
+  const datosPorMes = prepararDatosPorMes(ingresosRealesParaGraficos);
   const datosPorCaja = prepararDatosPorCaja(movimientosConTipo);
-  const datosPorMetodo = prepararDatosPorMetodo(ingresos);
+  const datosPorMetodo = prepararDatosPorMetodo(ingresosRealesParaGraficos);
 
   return (
-    <main className="bg-pink-100 min-h-screen text-white">
+    <main className="bg-gray-900 min-h-screen text-white">
       <NavigationBar vistaActual={vistaActual} setVistaActual={setVistaActual} />
-      <div className="max-w-7xl mx-auto px-4 py-4 space-y-8">
-        
-        {/* Mostrar filtro solo en dashboard, ingresos y gastos */}
+
+      {cargando && (
+        <div className="fixed top-16 left-0 right-0 z-50">
+          <div className="h-1 bg-emerald-500 animate-pulse" />
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
         {(vistaActual === 'dashboard' || vistaActual === 'ingresos' || vistaActual === 'gastos') && (
-          <FiltroFechaExportar 
+          <FiltroFechaExportar
             desde={desde}
             hasta={hasta}
             setDesde={setDesde}
@@ -157,9 +175,8 @@ export default function DashboardPage() {
 
         {vistaActual === 'dashboard' && (
           <>
-            <div className="mb-8">
-              <DashboardStats estadisticas={estadisticas} desde={desde} hasta={hasta} />
-            </div>
+            <NotificacionesRecordatorios />
+            <DashboardStats estadisticas={estadisticas} desde={desde} hasta={hasta} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <BarChartMensual datos={datosPorMes} />
@@ -173,16 +190,11 @@ export default function DashboardPage() {
           </>
         )}
 
-        {vistaActual === 'ingresos' && <IngresoTable ingresos={ingresos} onRefresh={cargarIngresos} />}
-
-        {vistaActual === 'formulario' && <IngresoForm onSuccess={cargarIngresos} />}
-
-        {vistaActual === 'gastos' && (
-          <GastoTable gastos={gastos} onRefresh={cargarGastos} />
-        )}
-
-        {vistaActual === 'nuevo-gasto' && <GastoForm onSuccess={cargarGastos} />}
-
+        {vistaActual === 'ingresos' && <IngresoTable ingresos={ingresos} onRefresh={refresh} />}
+        {vistaActual === 'formulario' && <IngresoForm onSuccess={refresh} />}
+        {vistaActual === 'gastos' && <GastoTable gastos={gastos} onRefresh={refresh} />}
+        {vistaActual === 'nuevo-gasto' && <GastoForm onSuccess={refresh} />}
+        {vistaActual === 'contador' && <ContadorBilletes netoEfectivo={estadisticas.dineroHoy} />}
         {vistaActual === 'recordatorios' && <RecordatoriosPage />}
       </div>
     </main>
