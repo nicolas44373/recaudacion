@@ -2,14 +2,14 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const COLORES: Record<string, string> = {
-  Efectivo: '#10b981',
-  Tarjeta: '#3b82f6',
-  Transferencia: '#f59e0b',
-  'Depósito': '#8b5cf6',
-  Cheque: '#ec4899',
-  eCheq: '#06b6d4',
+  Efectivo: '#059669',
+  Tarjeta: '#2563eb',
+  Transferencia: '#d97706',
+  'Depósito': '#7c3aed',
+  Cheque: '#db2777',
+  eCheq: '#0891b2',
 };
-const COLOR_DEFAULT = '#6b7280';
+const COLOR_DEFAULT = '#9ca3af';
 
 const fmtTooltip = (value: number) =>
   value.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
@@ -18,8 +18,8 @@ export default function PieChartMetodoPago({ datos }: { datos: any[] }) {
   const total = datos.reduce((s, d) => s + d.value, 0);
 
   return (
-    <div className="bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-md">
-      <h2 className="text-base font-semibold text-white mb-4">Distribución por Método de Pago</h2>
+    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+      <h2 className="text-base font-semibold text-gray-900 mb-4">Distribución por Método de Pago</h2>
       <div className="h-64 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -38,8 +38,8 @@ export default function PieChartMetodoPago({ datos }: { datos: any[] }) {
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }}
-              labelStyle={{ color: '#e5e7eb' }}
+              contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              labelStyle={{ color: '#111827' }}
               formatter={(value: number, name: string) => [
                 `${fmtTooltip(value)} (${total > 0 ? ((value / total) * 100).toFixed(1) : 0}%)`,
                 name,
@@ -47,7 +47,7 @@ export default function PieChartMetodoPago({ datos }: { datos: any[] }) {
             />
             <Legend
               wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
-              formatter={(value) => <span style={{ color: '#d1d5db' }}>{value}</span>}
+              formatter={(value) => <span style={{ color: '#374151' }}>{value}</span>}
             />
           </PieChart>
         </ResponsiveContainer>

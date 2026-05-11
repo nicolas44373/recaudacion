@@ -71,11 +71,9 @@ export default function FiltroFechaExportar({
         Notas: item.notas || '',
       }));
 
-      // Fila de total bruto
       const totalBruto = datos.reduce((s, i) => s + Number(i.monto), 0);
       datosExcel.push({ Fecha: '', Categoría: 'TOTAL BRUTO', Monto: totalBruto, 'Método de Pago': '', Notas: '' });
 
-      // Total real (sin INICIO DEL DIA) solo para ingresos
       if (tipo === 'ingresos') {
         const totalReal = datos
           .filter(i => i.categoria !== CATEGORIA_INICIO_DIA)
@@ -99,11 +97,11 @@ export default function FiltroFechaExportar({
   };
 
   return (
-    <div className="bg-gray-800 rounded-xl border border-gray-700 shadow-md p-4 space-y-3">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
 
-      {/* Fila 1 – Presets de acceso rápido */}
+      {/* Presets */}
       <div className="flex flex-wrap gap-1.5">
-        <span className="text-[10px] text-gray-500 uppercase tracking-widest self-center mr-1">Rápido:</span>
+        <span className="text-[10px] text-gray-400 uppercase tracking-widest self-center mr-1">Rápido:</span>
         {PRESETS.map(p => (
           <button
             key={p.label}
@@ -111,7 +109,7 @@ export default function FiltroFechaExportar({
             className={`px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
               presetActivo(p)
                 ? 'bg-emerald-600 border-emerald-500 text-white'
-                : 'bg-gray-700 border-gray-600 text-gray-400 hover:text-white hover:bg-gray-600'
+                : 'bg-gray-50 border-gray-300 text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
             {p.label}
@@ -119,11 +117,11 @@ export default function FiltroFechaExportar({
         ))}
       </div>
 
-      {/* Fila 2 – Fechas manuales + botón exportar */}
+      {/* Fechas + exportar */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex items-center gap-2 text-gray-500 flex-shrink-0">
+        <div className="flex items-center gap-2 text-gray-400 flex-shrink-0">
           <Calendar size={15} />
-          <span className="text-xs font-semibold text-gray-400">Período</span>
+          <span className="text-xs font-semibold text-gray-600">Período</span>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 flex-1">
@@ -133,7 +131,7 @@ export default function FiltroFechaExportar({
               type="date"
               value={desde}
               onChange={e => setDesde(e.target.value)}
-              className="flex-1 bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent hover:border-gray-500 transition-colors"
+              className="flex-1 bg-gray-50 border border-gray-300 text-gray-900 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent hover:border-gray-400 transition-colors"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -142,26 +140,26 @@ export default function FiltroFechaExportar({
               type="date"
               value={hasta}
               onChange={e => setHasta(e.target.value)}
-              className="flex-1 bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent hover:border-gray-500 transition-colors"
+              className="flex-1 bg-gray-50 border border-gray-300 text-gray-900 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent hover:border-gray-400 transition-colors"
             />
           </div>
         </div>
 
         <button
           onClick={exportarExcel}
-          className="flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0"
+          className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0"
         >
           <Download size={15} />
           Exportar {tipo === 'ingresos' ? 'Ingresos' : 'Gastos'}
         </button>
       </div>
 
-      {/* Resumen del período seleccionado */}
+      {/* Resumen */}
       {datos.length > 0 && (
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 border-t border-gray-700 pt-2">
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 border-t border-gray-100 pt-2">
           <span>
             {datos.length} registros ·{' '}
-            <span className="text-white font-medium">
+            <span className="text-gray-900 font-medium">
               {datos.reduce((s, i) => s + Number(i.monto), 0)
                 .toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 })}
             </span>
@@ -169,7 +167,7 @@ export default function FiltroFechaExportar({
           </span>
           {tipo === 'ingresos' && (
             <span>
-              <span className="text-emerald-400 font-medium">
+              <span className="text-emerald-600 font-medium">
                 {datos.filter(i => i.categoria !== CATEGORIA_INICIO_DIA)
                   .reduce((s, i) => s + Number(i.monto), 0)
                   .toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 })}

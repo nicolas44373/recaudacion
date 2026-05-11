@@ -9,7 +9,6 @@ import { format } from 'date-fns';
 
 const UMBRAL_ALERTA = 5_000_000;
 
-// Categorías agrupadas
 const GRUPOS_CATEGORIAS: Record<string, string[]> = {
   'PERSONAL / SUELDOS': [
     'SUELDOS FIJOS', 'SUELDOS TEMPORALES', 'HORAS EXTRA',
@@ -40,19 +39,17 @@ const GRUPOS_CATEGORIAS: Record<string, string[]> = {
   ],
 };
 
-
-
 const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Depósito', 'Tarjeta', 'Cheque', 'eCheq'];
 
 const DENOMINACIONES = [
-  { valor: 50,    color: 'text-cyan-400',   ring: 'focus:ring-cyan-500',   border: 'border-cyan-500/40',   bg: 'bg-cyan-500/10'    },
-  { valor: 100,   color: 'text-red-400',    ring: 'focus:ring-red-500',    border: 'border-red-500/40',    bg: 'bg-red-500/10'     },
-  { valor: 200,   color: 'text-orange-400', ring: 'focus:ring-orange-500', border: 'border-orange-500/40', bg: 'bg-orange-500/10'  },
-  { valor: 500,   color: 'text-violet-400', ring: 'focus:ring-violet-500', border: 'border-violet-500/40', bg: 'bg-violet-500/10'  },
-  { valor: 1000,  color: 'text-blue-400',   ring: 'focus:ring-blue-500',   border: 'border-blue-500/40',   bg: 'bg-blue-500/10'    },
-  { valor: 2000,  color: 'text-emerald-400',ring: 'focus:ring-emerald-500',border: 'border-emerald-500/40',bg: 'bg-emerald-500/10' },
-  { valor: 10000, color: 'text-teal-400',   ring: 'focus:ring-teal-500',   border: 'border-teal-500/40',   bg: 'bg-teal-500/10'    },
-  { valor: 20000, color: 'text-pink-400',   ring: 'focus:ring-pink-500',   border: 'border-pink-500/40',   bg: 'bg-pink-500/10'    },
+  { valor: 50,    color: 'text-cyan-600',    ring: 'focus:ring-cyan-500',    border: 'border-cyan-200',    bg: 'bg-cyan-50'    },
+  { valor: 100,   color: 'text-red-600',     ring: 'focus:ring-red-500',     border: 'border-red-200',     bg: 'bg-red-50'     },
+  { valor: 200,   color: 'text-orange-600',  ring: 'focus:ring-orange-500',  border: 'border-orange-200',  bg: 'bg-orange-50'  },
+  { valor: 500,   color: 'text-violet-600',  ring: 'focus:ring-violet-500',  border: 'border-violet-200',  bg: 'bg-violet-50'  },
+  { valor: 1000,  color: 'text-blue-600',    ring: 'focus:ring-blue-500',    border: 'border-blue-200',    bg: 'bg-blue-50'    },
+  { valor: 2000,  color: 'text-emerald-600', ring: 'focus:ring-emerald-500', border: 'border-emerald-200', bg: 'bg-emerald-50' },
+  { valor: 10000, color: 'text-teal-600',    ring: 'focus:ring-teal-500',    border: 'border-teal-200',    bg: 'bg-teal-50'    },
+  { valor: 20000, color: 'text-pink-600',    ring: 'focus:ring-pink-500',    border: 'border-pink-200',    bg: 'bg-pink-50'    },
 ];
 
 const fmt = (n: number) =>
@@ -154,28 +151,28 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
       )}
 
       {/* Encabezado */}
-      <div className="rounded-xl p-5 border bg-gray-800 border-gray-700 flex items-center gap-4">
-        <div className="p-3 rounded-xl bg-red-500/20">
-          <MinusCircle size={24} className="text-red-400" />
+      <div className="rounded-xl p-5 border bg-white border-gray-200 flex items-center gap-4">
+        <div className="p-3 rounded-xl bg-red-100">
+          <MinusCircle size={24} className="text-red-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white">Nuevo Egreso</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Registrá un gasto o salida de dinero</p>
+          <h2 className="text-xl font-bold text-gray-900">Nuevo Egreso</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Registrá un gasto o salida de dinero</p>
         </div>
       </div>
 
       {/* Cuerpo del formulario */}
-      <div className="rounded-xl border bg-gray-800 border-gray-700 p-5 space-y-5">
+      <div className="rounded-xl border bg-white border-gray-200 p-5 space-y-5">
 
         {/* Categoría con grupos */}
         <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Categoría <span className="text-red-400">*</span>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Categoría <span className="text-red-500">*</span>
           </label>
           <select
             value={categoria}
             onChange={e => { setCategoria(e.target.value); setErrores(p => ({ ...p, categoria: '' })); }}
-            className={`w-full p-3 bg-gray-700 border rounded-xl text-white text-sm focus:outline-none focus:ring-2 transition-colors ${errores.categoria ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-red-500 hover:border-gray-500'}`}
+            className={`w-full p-3 bg-gray-50 border rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 transition-colors ${errores.categoria ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-red-500 hover:border-gray-400'}`}
           >
             <option value="">— Seleccioná una categoría —</option>
             {Object.entries(GRUPOS_CATEGORIAS).map(([grupo, cats]) => (
@@ -184,13 +181,13 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
               </optgroup>
             ))}
           </select>
-          {errores.categoria && <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.categoria}</p>}
+          {errores.categoria && <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.categoria}</p>}
         </div>
 
         {/* Método de pago – botones */}
         <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Método de Pago <span className="text-red-400">*</span>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Método de Pago <span className="text-red-500">*</span>
           </label>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {METODOS_PAGO.map(m => (
@@ -204,23 +201,23 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
                 }}
                 className={`py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all duration-150 ${metodoPago === m
                   ? 'bg-red-600 border-red-500 text-white shadow-md'
-                  : 'bg-gray-700 border-gray-600 text-gray-400 hover:text-white hover:border-gray-500'
+                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900 hover:border-gray-300'
                 }`}
               >
                 {m}
               </button>
             ))}
           </div>
-          {errores.metodoPago && <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.metodoPago}</p>}
+          {errores.metodoPago && <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.metodoPago}</p>}
         </div>
 
         {/* Calculadora de billetes (solo Efectivo) */}
         {metodoPago === 'Efectivo' && (
-          <div className="rounded-xl border border-gray-600 overflow-hidden">
+          <div className="rounded-xl border border-gray-200 overflow-hidden">
             <button
               type="button"
               onClick={() => setMostrarBilletes(!mostrarBilletes)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gray-700/50 hover:bg-gray-700 transition-colors text-sm font-medium text-gray-300"
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
             >
               <div className="flex items-center gap-2">
                 <Calculator size={15} className="text-gray-400" />
@@ -228,14 +225,14 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
               </div>
               <div className="flex items-center gap-3">
                 {totalBilletes > 0 && (
-                  <span className="text-red-400 text-xs font-bold">{fmt(totalBilletes)}</span>
+                  <span className="text-red-600 text-xs font-bold">{fmt(totalBilletes)}</span>
                 )}
                 {mostrarBilletes ? <ChevronUp size={15} className="text-gray-400" /> : <ChevronDown size={15} className="text-gray-400" />}
               </div>
             </button>
 
             {mostrarBilletes && (
-              <div className="p-4 border-t border-gray-600 space-y-4">
+              <div className="p-4 border-t border-gray-200 space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {DENOMINACIONES.map(d => {
                     const qty = parseInt(denominaciones[d.valor] || '0', 10);
@@ -251,10 +248,10 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
                           placeholder="0"
                           value={denominaciones[d.valor] ?? ''}
                           onChange={e => setDen(d.valor, e.target.value)}
-                          className={`w-full bg-gray-800 border border-gray-600 rounded-lg p-1.5 text-white text-sm text-center focus:outline-none focus:ring-2 ${d.ring}`}
+                          className={`w-full bg-white border border-gray-300 rounded-lg p-1.5 text-gray-900 text-sm text-center focus:outline-none focus:ring-2 ${d.ring}`}
                         />
                         {subtotal > 0 && (
-                          <div className="text-xs text-gray-400 mt-1.5 text-center">
+                          <div className="text-xs text-gray-500 mt-1.5 text-center">
                             {subtotal.toLocaleString('es-AR')}
                           </div>
                         )}
@@ -264,10 +261,10 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
                 </div>
 
                 {/* Total de billetes */}
-                <div className="flex items-center justify-between p-4 bg-gray-900/60 rounded-xl border border-gray-600">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <div>
-                    <p className="text-xs text-gray-400 mb-0.5">Total contado</p>
-                    <p className={`text-2xl font-bold tabular-nums ${totalBilletes > 0 ? 'text-red-400' : 'text-gray-600'}`}>
+                    <p className="text-xs text-gray-500 mb-0.5">Total contado</p>
+                    <p className={`text-2xl font-bold tabular-nums ${totalBilletes > 0 ? 'text-red-600' : 'text-gray-300'}`}>
                       {fmt(totalBilletes)}
                     </p>
                   </div>
@@ -275,7 +272,7 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
                     type="button"
                     onClick={usarTotalBilletes}
                     disabled={totalBilletes === 0}
-                    className="bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+                    className="bg-red-600 hover:bg-red-700 disabled:bg-gray-100 disabled:text-gray-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
                   >
                     Usar este total →
                   </button>
@@ -287,8 +284,8 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
 
         {/* Monto */}
         <div>
-          <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-            Monto <span className="text-red-400">*</span>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Monto <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">$</span>
@@ -298,14 +295,14 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
               placeholder="0"
               value={montoDisplay}
               onChange={handleMontoChange}
-              className={`w-full pl-9 pr-4 py-4 bg-gray-700 border rounded-xl text-white text-2xl font-bold tabular-nums focus:outline-none focus:ring-2 transition-colors ${montoEsAlto ? 'border-red-500 focus:ring-red-500' : errores.monto ? 'border-red-500 focus:ring-red-500' : 'border-gray-600 focus:ring-red-500 hover:border-gray-500'}`}
+              className={`w-full pl-9 pr-4 py-4 bg-gray-50 border rounded-xl text-gray-900 text-2xl font-bold tabular-nums focus:outline-none focus:ring-2 transition-colors ${montoEsAlto ? 'border-red-400 focus:ring-red-500' : errores.monto ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-red-500 hover:border-gray-400'}`}
             />
           </div>
           {errores.monto && (
-            <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.monto}</p>
+            <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.monto}</p>
           )}
           {montoEsAlto && (
-            <div className="mt-2 flex items-center gap-2 text-red-400 text-xs bg-red-500/10 border border-red-500/30 px-3 py-2 rounded-lg">
+            <div className="mt-2 flex items-center gap-2 text-red-600 text-xs bg-red-50 border border-red-200 px-3 py-2 rounded-lg">
               <AlertCircle size={14} className="flex-shrink-0" />
               Monto inusualmente alto. Verificá antes de guardar.
             </div>
@@ -315,35 +312,35 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
         {/* Fecha + Notas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Fecha</label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Fecha</label>
             <input
               type="date"
               value={fecha}
               onChange={e => setFecha(e.target.value)}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500 hover:border-gray-500 transition-colors"
+              className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 hover:border-gray-400 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Notas (opcional)</label>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Notas (opcional)</label>
             <textarea
               placeholder="Observaciones adicionales..."
               value={notas}
               onChange={e => setNotas(e.target.value)}
               rows={1}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500 hover:border-gray-500 transition-colors resize-none"
+              className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 hover:border-gray-400 transition-colors resize-none"
             />
           </div>
         </div>
 
         {/* Vista previa */}
         {categoria && metodoPago && montoNum > 0 && (
-          <div className="rounded-xl p-4 border bg-red-950/20 border-red-700/30 text-sm">
-            <p className="text-xs text-gray-400 mb-2 font-semibold uppercase tracking-wider">Vista previa</p>
+          <div className="rounded-xl p-4 border bg-red-50 border-red-200 text-sm">
+            <p className="text-xs text-gray-500 mb-2 font-semibold uppercase tracking-wider">Vista previa</p>
             <div className="flex flex-wrap gap-x-6 gap-y-1">
-              <span className="text-gray-300"><span className="text-gray-500">Categoría:</span> {categoria}</span>
-              <span className="text-gray-300"><span className="text-gray-500">Método:</span> {metodoPago}</span>
-              <span className="font-bold tabular-nums text-red-400">{fmt(montoNum)}</span>
-              <span className="text-gray-300"><span className="text-gray-500">Fecha:</span> {fecha}</span>
+              <span className="text-gray-700"><span className="text-gray-400">Categoría:</span> {categoria}</span>
+              <span className="text-gray-700"><span className="text-gray-400">Método:</span> {metodoPago}</span>
+              <span className="font-bold tabular-nums text-red-600">{fmt(montoNum)}</span>
+              <span className="text-gray-700"><span className="text-gray-400">Fecha:</span> {fecha}</span>
             </div>
           </div>
         )}
@@ -353,7 +350,7 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
           <button
             onClick={guardar}
             disabled={guardando}
-            className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white transition-all shadow-md ${guardando ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-600 hover:bg-red-500 active:scale-95'}`}
+            className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white transition-all shadow-md ${guardando ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 active:scale-95'}`}
           >
             <MinusCircle size={18} />
             {guardando ? 'Guardando...' : 'Guardar Egreso'}
@@ -361,7 +358,7 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
           <button
             onClick={limpiar}
             disabled={guardando}
-            className="px-5 py-3.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-xl font-semibold transition-colors"
+            className="px-5 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-semibold transition-colors"
           >
             Limpiar
           </button>

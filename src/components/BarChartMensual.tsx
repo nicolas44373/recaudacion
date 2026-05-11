@@ -2,12 +2,12 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const COLORES: Record<string, string> = {
-  Efectivo: '#10b981',
-  Tarjeta: '#3b82f6',
-  Transferencia: '#f59e0b',
-  'Depósito': '#8b5cf6',
-  Cheque: '#ec4899',
-  eCheq: '#06b6d4',
+  Efectivo: '#059669',
+  Tarjeta: '#2563eb',
+  Transferencia: '#d97706',
+  'Depósito': '#7c3aed',
+  Cheque: '#db2777',
+  eCheq: '#0891b2',
 };
 
 const fmtYAxis = (v: number) => {
@@ -21,22 +21,22 @@ const fmtTooltip = (value: number) =>
 
 export default function BarChartMensual({ datos }: { datos: any[] }) {
   return (
-    <div className="bg-gray-800 p-5 rounded-xl border border-gray-700 shadow-md">
-      <h2 className="text-base font-semibold text-white mb-4">Ingresos por Mes</h2>
+    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+      <h2 className="text-base font-semibold text-gray-900 mb-4">Ingresos por Mes</h2>
       <div className="h-64 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={datos} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-            <XAxis dataKey="mes" tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={fmtYAxis} tick={{ fill: '#9ca3af', fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+            <XAxis dataKey="mes" tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tickFormatter={fmtYAxis} tick={{ fill: '#6b7280', fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
             <Tooltip
-              contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: 8 }}
-              labelStyle={{ color: '#e5e7eb', fontWeight: 600 }}
-              itemStyle={{ color: '#d1d5db' }}
+              contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              labelStyle={{ color: '#111827', fontWeight: 600 }}
+              itemStyle={{ color: '#374151' }}
               formatter={(value: number, name: string) => [fmtTooltip(value), name]}
               labelFormatter={(label) => `Mes: ${label}`}
             />
-            <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+            <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8, color: '#374151' }} />
             {Object.entries(COLORES).map(([metodo, color]) => (
               <Bar key={metodo} dataKey={metodo} name={metodo} fill={color} radius={[3, 3, 0, 0]} maxBarSize={30} />
             ))}

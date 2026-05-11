@@ -21,7 +21,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Dashboard',
     labelShort: 'Inicio',
     icon: LayoutDashboard,
-    color: 'text-blue-400',
+    color: 'text-blue-500',
     activeClass: 'bg-blue-600 text-white border-blue-500',
   },
   {
@@ -29,15 +29,15 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Contar Caja',
     labelShort: 'Caja',
     icon: Banknote,
-    color: 'text-emerald-400',
-    activeClass: 'bg-emerald-800 text-white border-emerald-600',
+    color: 'text-emerald-500',
+    activeClass: 'bg-emerald-700 text-white border-emerald-600',
   },
   {
     vista: 'ingresos',
     label: 'Ver Ingresos',
     labelShort: 'Ingresos',
     icon: TrendingUp,
-    color: 'text-emerald-400',
+    color: 'text-emerald-500',
     activeClass: 'bg-emerald-600 text-white border-emerald-500',
   },
   {
@@ -45,7 +45,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Nuevo Ingreso',
     labelShort: '+ Ingreso',
     icon: PlusCircle,
-    color: 'text-emerald-400',
+    color: 'text-emerald-500',
     activeClass: 'bg-emerald-700 text-white border-emerald-600',
   },
   {
@@ -53,7 +53,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Ver Egresos',
     labelShort: 'Egresos',
     icon: TrendingDown,
-    color: 'text-red-400',
+    color: 'text-red-500',
     activeClass: 'bg-red-600 text-white border-red-500',
   },
   {
@@ -61,7 +61,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Nuevo Egreso',
     labelShort: '+ Egreso',
     icon: MinusCircle,
-    color: 'text-red-400',
+    color: 'text-red-500',
     activeClass: 'bg-red-700 text-white border-red-600',
   },
   {
@@ -69,7 +69,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Recordatorios',
     labelShort: 'Notas',
     icon: Bell,
-    color: 'text-amber-400',
+    color: 'text-amber-500',
     activeClass: 'bg-amber-600 text-white border-amber-500',
   },
 ];
@@ -82,22 +82,22 @@ export default function NavigationBar({
   setVistaActual: (_: Vista) => void;
 }) {
   return (
-    <nav className="bg-gray-900 border-b border-gray-700/80 sticky top-0 z-40 shadow-xl">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-14 gap-4">
 
           {/* Logo */}
           <div className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="bg-emerald-500/15 p-1.5 rounded-lg">
-              <DollarSign size={18} className="text-emerald-400" />
+            <div className="bg-emerald-100 p-1.5 rounded-lg">
+              <DollarSign size={18} className="text-emerald-600" />
             </div>
             <div className="hidden sm:block leading-tight">
-              <p className="text-sm font-bold text-white tracking-tight">Recaudación</p>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider">Sistema de caja</p>
+              <p className="text-sm font-bold text-gray-900 tracking-tight">Recaudación</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Sistema de caja</p>
             </div>
           </div>
 
-          {/* Nav items – scroll horizontal en mobile */}
+          {/* Nav items */}
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1 justify-end">
             {NAV_ITEMS.map(({ vista, label, labelShort, icon: Icon, color, activeClass }) => {
               const isActive = vistaActual === vista;
@@ -110,7 +110,7 @@ export default function NavigationBar({
                     border transition-all duration-150 whitespace-nowrap flex-shrink-0
                     ${isActive
                       ? activeClass
-                      : `bg-transparent border-transparent text-gray-400 hover:text-white hover:bg-gray-800`
+                      : `bg-transparent border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100`
                     }
                   `}
                 >

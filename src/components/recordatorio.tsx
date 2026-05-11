@@ -49,25 +49,24 @@ function tiempoRelativo(fechaStr: string): string {
   const h = differenceInHours(fecha, ahora);
   if (h < 1) return `en ${differenceInMinutes(fecha, ahora)} min`;
   if (h < 24) return `en ${h}h`;
-  // Comparar por día calendario, no por horas
   if (format(fecha, 'yyyy-MM-dd') === format(addDays(ahora, 1), 'yyyy-MM-dd')) return 'mañana';
   return format(fecha, 'dd/MM/yyyy');
 }
 
 const BADGE: Record<Clasificacion, { label: string; className: string }> = {
-  vencido:   { label: 'Vencido',   className: 'bg-red-500/20 text-red-400 border border-red-500/40' },
-  proximo:   { label: 'Hoy',       className: 'bg-amber-500/20 text-amber-400 border border-amber-500/40' },
-  futuro:    { label: 'Pendiente', className: 'bg-blue-500/20 text-blue-400 border border-blue-500/40' },
-  sin_fecha: { label: 'Sin fecha', className: 'bg-gray-500/20 text-gray-400 border border-gray-500/40' },
-  completada:{ label: 'Completado',className: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' },
+  vencido:    { label: 'Vencido',    className: 'bg-red-100 text-red-700 border border-red-200' },
+  proximo:    { label: 'Hoy',        className: 'bg-amber-100 text-amber-700 border border-amber-200' },
+  futuro:     { label: 'Pendiente',  className: 'bg-blue-100 text-blue-700 border border-blue-200' },
+  sin_fecha:  { label: 'Sin fecha',  className: 'bg-gray-100 text-gray-600 border border-gray-200' },
+  completada: { label: 'Completado', className: 'bg-emerald-100 text-emerald-700 border border-emerald-200' },
 };
 
 const CARD_BORDER: Record<Clasificacion, string> = {
-  vencido:    'border-red-700/50 bg-red-950/20',
-  proximo:    'border-amber-700/50 bg-amber-950/20',
-  futuro:     'border-blue-700/40 bg-gray-800',
-  sin_fecha:  'border-gray-700 bg-gray-800',
-  completada: 'border-gray-700/40 bg-gray-800/60 opacity-60',
+  vencido:    'border-red-200 bg-red-50',
+  proximo:    'border-amber-200 bg-amber-50',
+  futuro:     'border-blue-200 bg-blue-50',
+  sin_fecha:  'border-gray-200 bg-white',
+  completada: 'border-gray-100 bg-gray-50 opacity-60',
 };
 
 interface ModalData {
@@ -86,17 +85,13 @@ export default function RecordatoriosPage() {
   const [notas, setNotas] = useState('');
   const [posponerFecha, setPosponerFecha] = useState('');
 
-  // Form state
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [fechaRecordar, setFechaRecordar] = useState('');
 
   const cargar = useCallback(async () => {
     setCargando(true);
-    const { data } = await supabase
-      .from('recordatorios')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data } = await supabase.from('recordatorios').select('*').order('created_at', { ascending: false });
     if (data) setRecords(data as Recordatorio[]);
     setCargando(false);
   }, []);
@@ -110,8 +105,6 @@ export default function RecordatoriosPage() {
     return () => { supabase.removeChannel(channel); };
   }, [cargar]);
 
-  // ─── Acciones ───────────────────────────────────────────────────────────────
-
   const agregar = async (e: FormEvent) => {
     e.preventDefault();
     if (!titulo.trim()) return;
@@ -122,9 +115,7 @@ export default function RecordatoriosPage() {
       fecha_recordar: fechaRecordar ? new Date(fechaRecordar).toISOString() : null,
     }]);
     setTitulo(''); setDescripcion(''); setFechaRecordar('');
-    setFormAbierto(false);
-    setGuardando(false);
-    cargar();
+    setFormAbierto(false); setGuardando(false); cargar();
   };
 
   const marcarResuelto = async (id: string, notasExtra?: string) => {
@@ -155,10 +146,7 @@ export default function RecordatoriosPage() {
     setModal(null); setGuardando(false); cargar();
   };
 
-  // ─── Derivados ──────────────────────────────────────────────────────────────
-
   const clasificados = records.map(r => ({ ...r, _clase: clasificar(r) }));
-
   const filtrados = clasificados
     .filter(r => {
       if (filtro === 'pendientes') return r.estado === 'pendiente';
@@ -175,14 +163,16 @@ export default function RecordatoriosPage() {
     vencidos: records.filter(r => clasificar(r) === 'vencido').length,
   };
 
+  const inputCls = 'w-full p-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder-gray-400';
+
   return (
     <div className="max-w-3xl mx-auto space-y-5">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Bell size={20} className="text-amber-400" />
-          <h2 className="text-lg font-bold text-white">Recordatorios</h2>
+          <Bell size={20} className="text-amber-500" />
+          <h2 className="text-lg font-bold text-gray-900">Recordatorios</h2>
           {counts.vencidos > 0 && (
             <span className="bg-red-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">
               {counts.vencidos} vencido{counts.vencidos > 1 ? 's' : ''}
@@ -191,90 +181,64 @@ export default function RecordatoriosPage() {
         </div>
         <button
           onClick={() => setFormAbierto(!formAbierto)}
-          className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={15} />
           Nuevo
         </button>
       </div>
 
-      {/* ── Stats ──────────────────────────────────────────────────────────── */}
+      {/* Stats */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: 'Total', value: counts.total, color: 'text-gray-300' },
-          { label: 'Pendientes', value: counts.pendientes, color: 'text-blue-400' },
-          { label: 'Vencidos', value: counts.vencidos, color: 'text-red-400' },
-          { label: 'Completados', value: counts.completadas, color: 'text-emerald-400' },
+          { label: 'Total',      value: counts.total,      color: 'text-gray-900' },
+          { label: 'Pendientes', value: counts.pendientes,  color: 'text-blue-600' },
+          { label: 'Vencidos',   value: counts.vencidos,    color: 'text-red-600' },
+          { label: 'Completados',value: counts.completadas, color: 'text-emerald-600' },
         ].map(s => (
-          <div key={s.label} className="bg-gray-800 rounded-xl p-3 border border-gray-700 text-center">
+          <div key={s.label} className="bg-white rounded-xl p-3 border border-gray-200 text-center shadow-sm">
             <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">{s.label}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* ── Formulario nuevo ───────────────────────────────────────────────── */}
+      {/* Formulario */}
       {formAbierto && (
-        <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-xl p-5 space-y-4">
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-bold text-white">Nuevo recordatorio</p>
-            <button onClick={() => setFormAbierto(false)} className="text-gray-400 hover:text-white">
-              <X size={16} />
-            </button>
+            <p className="text-sm font-bold text-gray-900">Nuevo recordatorio</p>
+            <button onClick={() => setFormAbierto(false)} className="text-gray-400 hover:text-gray-700"><X size={16} /></button>
           </div>
           <form onSubmit={agregar} className="space-y-3">
-            <input
-              type="text"
-              placeholder="Título *"
-              value={titulo}
-              onChange={e => setTitulo(e.target.value)}
-              required
-              maxLength={100}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
-            <textarea
-              placeholder="Descripción (opcional)"
-              value={descripcion}
-              onChange={e => setDescripcion(e.target.value)}
-              maxLength={500}
-              rows={2}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
-            />
+            <input type="text" placeholder="Título *" value={titulo} onChange={e => setTitulo(e.target.value)} required maxLength={100} className={inputCls} />
+            <textarea placeholder="Descripción (opcional)" value={descripcion} onChange={e => setDescripcion(e.target.value)} maxLength={500} rows={2} className={`${inputCls} resize-none`} />
             <div className="flex items-center gap-2">
               <Calendar size={14} className="text-gray-400 flex-shrink-0" />
-              <input
-                type="datetime-local"
-                value={fechaRecordar}
-                onChange={e => setFechaRecordar(e.target.value)}
-                className="flex-1 p-2.5 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-              />
+              <input type="datetime-local" value={fechaRecordar} onChange={e => setFechaRecordar(e.target.value)} className="flex-1 p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
-            <button
-              type="submit"
-              disabled={guardando || !titulo.trim()}
-              className="w-full bg-amber-600 hover:bg-amber-500 disabled:bg-gray-600 disabled:text-gray-500 text-white font-bold py-3 rounded-xl text-sm transition-colors"
-            >
+            <button type="submit" disabled={guardando || !titulo.trim()} className="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-xl text-sm transition-colors">
               {guardando ? 'Guardando...' : 'Agregar recordatorio'}
             </button>
           </form>
         </div>
       )}
 
-      {/* ── Filtros ────────────────────────────────────────────────────────── */}
+      {/* Filtros */}
       <div className="flex gap-2 flex-wrap">
         {([
-          { key: 'todos',      label: 'Todos',       count: counts.total },
-          { key: 'pendientes', label: 'Pendientes',  count: counts.pendientes },
-          { key: 'vencidos',   label: 'Vencidos',    count: counts.vencidos },
-          { key: 'completadas',label: 'Completados', count: counts.completadas },
+          { key: 'todos',       label: 'Todos',        count: counts.total },
+          { key: 'pendientes',  label: 'Pendientes',   count: counts.pendientes },
+          { key: 'vencidos',    label: 'Vencidos',     count: counts.vencidos },
+          { key: 'completadas', label: 'Completados',  count: counts.completadas },
         ] as { key: Filtro; label: string; count: number }[]).map(f => (
           <button
             key={f.key}
             onClick={() => setFiltro(f.key)}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
               filtro === f.key
-                ? 'bg-amber-600 border-amber-500 text-white'
-                : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-white hover:bg-gray-700'
+                ? 'bg-amber-500 border-amber-400 text-white'
+                : 'bg-white border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50'
             }`}
           >
             {f.label} {f.count > 0 && <span className="ml-1 opacity-70">({f.count})</span>}
@@ -282,22 +246,22 @@ export default function RecordatoriosPage() {
         ))}
       </div>
 
-      {/* ── Lista ──────────────────────────────────────────────────────────── */}
+      {/* Lista */}
       {cargando && records.length === 0 ? (
-        <div className="bg-gray-800 rounded-2xl border border-gray-700 p-8 text-center">
-          <p className="text-gray-500 text-sm">Cargando...</p>
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+          <p className="text-gray-400 text-sm">Cargando...</p>
         </div>
       ) : filtrados.length === 0 ? (
-        <div className="bg-gray-800 rounded-2xl border border-gray-700 p-8 text-center space-y-2">
-          <Bell size={32} className="text-gray-600 mx-auto" />
-          <p className="text-gray-400 font-medium">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center space-y-2 shadow-sm">
+          <Bell size={32} className="text-gray-300 mx-auto" />
+          <p className="text-gray-500 font-medium">
             {filtro === 'todos' ? 'Sin recordatorios' :
              filtro === 'pendientes' ? 'No hay pendientes' :
              filtro === 'vencidos' ? 'Sin vencidos — todo al día' :
              'Sin completados'}
           </p>
           {filtro === 'todos' && (
-            <p className="text-gray-600 text-sm">Presioná &quot;Nuevo&quot; para agregar uno</p>
+            <p className="text-gray-400 text-sm">Presioná &quot;Nuevo&quot; para agregar uno</p>
           )}
         </div>
       ) : (
@@ -310,34 +274,29 @@ export default function RecordatoriosPage() {
             return (
               <div key={r.id} className={`rounded-2xl border p-4 space-y-3 transition-opacity ${cardBorder}`}>
 
-                {/* Fila principal */}
                 <div className="flex items-start gap-3">
-                  {/* Icono de estado */}
                   <div className="mt-0.5 flex-shrink-0">
-                    {clase === 'vencido'   && <AlertTriangle size={15} className="text-red-400" />}
-                    {clase === 'proximo'   && <Clock size={15} className="text-amber-400" />}
-                    {clase === 'futuro'    && <CalendarClock size={15} className="text-blue-400" />}
-                    {clase === 'sin_fecha' && <Bell size={15} className="text-gray-400" />}
-                    {clase === 'completada'&& <CheckCircle size={15} className="text-emerald-400" />}
+                    {clase === 'vencido'    && <AlertTriangle size={15} className="text-red-500" />}
+                    {clase === 'proximo'    && <Clock size={15} className="text-amber-500" />}
+                    {clase === 'futuro'     && <CalendarClock size={15} className="text-blue-500" />}
+                    {clase === 'sin_fecha'  && <Bell size={15} className="text-gray-400" />}
+                    {clase === 'completada' && <CheckCircle size={15} className="text-emerald-500" />}
                   </div>
 
-                  {/* Contenido */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`text-sm font-semibold leading-tight ${clase === 'completada' ? 'line-through text-gray-500' : 'text-white'}`}>
+                      <p className={`text-sm font-semibold leading-tight ${clase === 'completada' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
                         {r.titulo}
                       </p>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge.className}`}>
                         {badge.label}
                       </span>
                     </div>
-                    {r.descripcion && (
-                      <p className="text-xs text-gray-400 mt-1 leading-relaxed">{r.descripcion}</p>
-                    )}
+                    {r.descripcion && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{r.descripcion}</p>}
                     {r.fecha_recordar && (
                       <p className={`text-xs mt-1.5 font-medium ${
-                        clase === 'vencido' ? 'text-red-400' :
-                        clase === 'proximo' ? 'text-amber-400' :
+                        clase === 'vencido' ? 'text-red-600' :
+                        clase === 'proximo' ? 'text-amber-600' :
                         'text-gray-500'
                       }`}>
                         {tiempoRelativo(r.fecha_recordar)} · {format(parseISO(r.fecha_recordar), 'dd/MM/yyyy HH:mm')}
@@ -345,59 +304,36 @@ export default function RecordatoriosPage() {
                     )}
                   </div>
 
-                  {/* Botones de acción pequeños (siempre visibles) */}
                   <div className="flex gap-1.5 flex-shrink-0">
                     {r.estado === 'pendiente' && (
-                      <button
-                        onClick={() => { setModal({ id: r.id, titulo: r.titulo, modo: 'posponer' }); setPosponerFecha(''); }}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-300 p-1.5 rounded-lg transition-colors"
-                        title="Posponer"
-                      >
+                      <button onClick={() => { setModal({ id: r.id, titulo: r.titulo, modo: 'posponer' }); setPosponerFecha(''); }} className="bg-white hover:bg-gray-100 border border-gray-200 text-gray-500 p-1.5 rounded-lg transition-colors" title="Posponer">
                         <CalendarClock size={13} />
                       </button>
                     )}
                     {r.estado === 'completada' && (
-                      <button
-                        onClick={() => reactivar(r.id)}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-300 p-1.5 rounded-lg transition-colors"
-                        title="Reactivar"
-                      >
+                      <button onClick={() => reactivar(r.id)} className="bg-white hover:bg-gray-100 border border-gray-200 text-gray-500 p-1.5 rounded-lg transition-colors" title="Reactivar">
                         <RotateCcw size={13} />
                       </button>
                     )}
-                    <button
-                      onClick={() => setModal({ id: r.id, titulo: r.titulo, modo: 'eliminar' })}
-                      className="bg-gray-700 hover:bg-red-800/60 text-gray-400 hover:text-red-300 p-1.5 rounded-lg transition-colors"
-                      title="Eliminar"
-                    >
+                    <button onClick={() => setModal({ id: r.id, titulo: r.titulo, modo: 'eliminar' })} className="bg-white hover:bg-red-50 border border-gray-200 hover:border-red-200 text-gray-400 hover:text-red-500 p-1.5 rounded-lg transition-colors" title="Eliminar">
                       <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
 
-                {/* Botones principales para pendientes */}
                 {r.estado === 'pendiente' && (
-                  <div className={`flex gap-2 ${clase === 'vencido' ? '' : 'pt-1'}`}>
+                  <div className="flex gap-2">
                     {clase === 'vencido' ? (
                       <>
-                        <button
-                          onClick={() => { setModal({ id: r.id, titulo: r.titulo, modo: 'resolver' }); setNotas(''); }}
-                          className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs py-2 rounded-lg font-semibold transition-colors"
-                        >
+                        <button onClick={() => { setModal({ id: r.id, titulo: r.titulo, modo: 'resolver' }); setNotas(''); }} className="flex-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs py-2 rounded-lg font-semibold transition-colors">
                           ¿Qué pasó?
                         </button>
-                        <button
-                          onClick={() => marcarResuelto(r.id)}
-                          className="flex-1 bg-emerald-700/70 hover:bg-emerald-600/80 text-emerald-100 text-xs py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1"
-                        >
+                        <button onClick={() => marcarResuelto(r.id)} className="flex-1 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-800 text-xs py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1">
                           <CheckCircle size={12} /> Resuelto
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={() => marcarResuelto(r.id)}
-                        className="bg-emerald-700/60 hover:bg-emerald-600/80 text-emerald-100 text-xs px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1"
-                      >
+                      <button onClick={() => marcarResuelto(r.id)} className="bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-emerald-800 text-xs px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1">
                         <CheckCircle size={12} /> Marcar como hecho
                       </button>
                     )}
@@ -409,10 +345,10 @@ export default function RecordatoriosPage() {
         </div>
       )}
 
-      {/* ── Modales ────────────────────────────────────────────────────────── */}
+      {/* Modales */}
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
 
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -421,106 +357,55 @@ export default function RecordatoriosPage() {
                    modal.modo === 'posponer' ? 'Posponer recordatorio' :
                    'Eliminar recordatorio'}
                 </p>
-                <p className="text-base font-bold text-white">{modal.titulo}</p>
+                <p className="text-base font-bold text-gray-900">{modal.titulo}</p>
               </div>
-              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-white p-1">
-                <X size={18} />
-              </button>
+              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-700 p-1"><X size={18} /></button>
             </div>
 
-            {/* Resolver */}
             {modal.modo === 'resolver' && (
               <>
                 <div>
-                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5 block">
-                    Notas de resolución (opcional)
-                  </label>
-                  <textarea
-                    value={notas}
-                    onChange={e => setNotas(e.target.value)}
-                    placeholder="Ej: Pago realizado, cheque cobrado, llamada hecha..."
-                    rows={3}
-                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                  <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1.5 block">Notas de resolución (opcional)</label>
+                  <textarea value={notas} onChange={e => setNotas(e.target.value)} placeholder="Ej: Pago realizado, cheque cobrado, llamada hecha..." rows={3} className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => marcarResuelto(modal.id, notas)}
-                    disabled={guardando}
-                    className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-600 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                  >
+                  <button onClick={() => marcarResuelto(modal.id, notas)} disabled={guardando} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-200 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
                     <CheckCircle size={16} />
                     {guardando ? 'Guardando...' : 'Fue resuelto'}
                   </button>
-                  <button
-                    onClick={() => { setModal({ ...modal, modo: 'posponer' }); setPosponerFecha(''); }}
-                    className="bg-amber-700/60 hover:bg-amber-600/70 text-amber-100 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                  >
-                    <CalendarClock size={16} />
-                    Posponer
+                  <button onClick={() => { setModal({ ...modal, modo: 'posponer' }); setPosponerFecha(''); }} className="bg-amber-100 hover:bg-amber-200 text-amber-800 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
+                    <CalendarClock size={16} /> Posponer
                   </button>
                 </div>
-                <button
-                  onClick={() => setModal(null)}
-                  className="w-full py-2.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-xl text-sm font-medium transition-colors"
-                >
-                  Cancelar
-                </button>
+                <button onClick={() => setModal(null)} className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-sm font-medium transition-colors">Cancelar</button>
               </>
             )}
 
-            {/* Posponer */}
             {modal.modo === 'posponer' && (
               <>
                 <div>
-                  <label className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1.5 block">
-                    Nueva fecha y hora
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={posponerFecha}
-                    onChange={e => setPosponerFecha(e.target.value)}
-                    className="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
+                  <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1.5 block">Nueva fecha y hora</label>
+                  <input type="datetime-local" value={posponerFecha} onChange={e => setPosponerFecha(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => posponerFecha && posponer(modal.id, posponerFecha)}
-                    disabled={!posponerFecha || guardando}
-                    className="bg-amber-600 hover:bg-amber-500 disabled:bg-gray-600 disabled:text-gray-500 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                  >
+                  <button onClick={() => posponerFecha && posponer(modal.id, posponerFecha)} disabled={!posponerFecha || guardando} className="bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 disabled:text-gray-400 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
                     <CalendarClock size={16} />
                     {guardando ? 'Guardando...' : 'Posponer'}
                   </button>
-                  <button
-                    onClick={() => setModal(null)}
-                    className="bg-gray-700 hover:bg-gray-600 text-gray-300 py-3 rounded-xl font-medium text-sm transition-colors"
-                  >
-                    Cancelar
-                  </button>
+                  <button onClick={() => setModal(null)} className="bg-gray-100 hover:bg-gray-200 text-gray-600 py-3 rounded-xl font-medium text-sm transition-colors">Cancelar</button>
                 </div>
               </>
             )}
 
-            {/* Eliminar */}
             {modal.modo === 'eliminar' && (
               <>
-                <p className="text-sm text-gray-400">Esta acción no se puede deshacer.</p>
+                <p className="text-sm text-gray-500">Esta acción no se puede deshacer.</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => eliminar(modal.id)}
-                    disabled={guardando}
-                    className="bg-red-700 hover:bg-red-600 disabled:bg-gray-600 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                  >
+                  <button onClick={() => eliminar(modal.id)} disabled={guardando} className="bg-red-600 hover:bg-red-700 disabled:bg-gray-200 text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors">
                     <Trash2 size={16} />
                     {guardando ? 'Eliminando...' : 'Eliminar'}
                   </button>
-                  <button
-                    onClick={() => setModal(null)}
-                    className="bg-gray-700 hover:bg-gray-600 text-gray-300 py-3 rounded-xl font-medium text-sm transition-colors"
-                  >
-                    Cancelar
-                  </button>
+                  <button onClick={() => setModal(null)} className="bg-gray-100 hover:bg-gray-200 text-gray-600 py-3 rounded-xl font-medium text-sm transition-colors">Cancelar</button>
                 </div>
               </>
             )}

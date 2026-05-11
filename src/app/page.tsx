@@ -151,7 +151,7 @@ export default function DashboardPage() {
   const datosPorMetodo = prepararDatosPorMetodo(ingresosRealesParaGraficos);
 
   return (
-    <main className="bg-gray-900 min-h-screen text-white">
+    <main className="bg-gray-50 min-h-screen text-gray-900">
       <NavigationBar vistaActual={vistaActual} setVistaActual={setVistaActual} />
 
       {cargando && (
