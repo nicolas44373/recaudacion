@@ -109,8 +109,8 @@ function generarHTML(
     /* Info: grilla 2 columnas */
     .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px 14px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid #eee;flex-shrink:0}
     .row{display:flex;gap:4px;align-items:baseline}
-    .lbl{color:#999;font-size:10px;white-space:nowrap;flex-shrink:0}
-    .val{font-weight:700;font-size:11px;word-break:break-word}
+    .lbl{color:#999;font-size:12px;white-space:nowrap;flex-shrink:0}
+    .val{font-weight:700;font-size:13px;word-break:break-word}
 
     /* Tabla */
     .sec-title{font-size:8.5px;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:2px;margin-bottom:2px;flex-shrink:0}
