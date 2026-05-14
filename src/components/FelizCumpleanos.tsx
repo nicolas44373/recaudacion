@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const SPARKLE_POSITIONS = [
@@ -23,15 +23,7 @@ const SPARKLE_EMOJIS = ['✨', '🌸', '🌟', '💛', '🌹', '💗', '⭐', '�
 export default function FelizCumpleanos() {
   const [visible, setVisible] = useState(true);
 
-  useEffect(() => {
-    const dismissed = sessionStorage.getItem('bday_emi_dismissed');
-    if (dismissed) setVisible(false);
-  }, []);
-
-  const dismiss = () => {
-    sessionStorage.setItem('bday_emi_dismissed', '1');
-    setVisible(false);
-  };
+  const dismiss = () => setVisible(false);
 
   return (
     <>
