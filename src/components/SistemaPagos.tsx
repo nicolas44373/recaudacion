@@ -90,7 +90,7 @@ function generarHTML(
     @page{size:210mm 297mm;margin:0}
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{width:210mm}
-    body{font-family:Arial,Helvetica,sans-serif;font-size:9.5px;color:#111}
+    body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111}
 
     .comprobante{
       width:194mm;height:84mm;
@@ -100,34 +100,34 @@ function generarHTML(
     }
 
     /* Cabecera */
-    .hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:4px;margin-bottom:5px;border-bottom:2px solid #111;flex-shrink:0}
+    .hdr{display:flex;align-items:center;justify-content:space-between;padding-bottom:3px;margin-bottom:4px;border-bottom:2px solid #111;flex-shrink:0}
     .title{font-size:24px;font-weight:900;letter-spacing:8px;line-height:1}
-    .subtitle{font-size:7.5px;font-weight:600;letter-spacing:3px;color:#666;margin-top:2px;text-transform:uppercase}
-    .hdr-right{text-align:right;font-size:9px;color:#666;line-height:1.6}
-    .hdr-right strong{color:#111;font-size:9.5px}
+    .subtitle{font-size:9px;font-weight:600;letter-spacing:3px;color:#666;margin-top:2px;text-transform:uppercase}
+    .hdr-right{text-align:right;font-size:11px;color:#666;line-height:1.5}
+    .hdr-right strong{color:#111;font-size:11px}
 
     /* Info: grilla 2 columnas */
-    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid #eee;flex-shrink:0}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px 14px;margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid #eee;flex-shrink:0}
     .row{display:flex;gap:4px;align-items:baseline}
-    .lbl{color:#999;font-size:8.5px;white-space:nowrap;flex-shrink:0}
-    .val{font-weight:700;font-size:9px;word-break:break-word}
+    .lbl{color:#999;font-size:10px;white-space:nowrap;flex-shrink:0}
+    .val{font-weight:700;font-size:11px;word-break:break-word}
 
     /* Tabla */
-    .sec-title{font-size:7px;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:2px;margin-bottom:2px;flex-shrink:0}
+    .sec-title{font-size:8.5px;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:2px;margin-bottom:2px;flex-shrink:0}
     table{width:100%;border-collapse:collapse;flex-shrink:1}
-    th{font-size:7.5px;color:#bbb;text-transform:uppercase;letter-spacing:1px;padding:2px 5px;border-bottom:1px solid #ddd;text-align:left;font-weight:700}
+    th{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:1px;padding:1.5px 5px;border-bottom:1px solid #ddd;text-align:left;font-weight:700}
     th:nth-child(2){text-align:center}th:nth-child(3){text-align:right}
-    td{padding:2px 5px;border-bottom:1px solid #f5f5f5;font-size:9px}
+    td{padding:1.5px 5px;border-bottom:1px solid #f5f5f5;font-size:11px}
     td:nth-child(2){text-align:center}
     td:nth-child(3){text-align:right;font-weight:600}
-    .tot-row td{padding:5px 5px 2px;background:none;color:#111;font-weight:900;font-size:14px;border:none;border-top:2px solid #111}
+    .tot-row td{padding:4px 5px 2px;background:none;color:#111;font-weight:900;font-size:15px;border:none;border-top:2px solid #111}
     .tot-row td:last-child{text-align:right}
 
     /* Firmas */
-    .firmas{display:flex;justify-content:space-between;padding-top:4px;border-top:1px solid #ddd;gap:14px;margin-top:auto;margin-bottom:5mm;flex-shrink:0}
+    .firmas{display:flex;justify-content:space-between;padding-top:3px;border-top:1px solid #ddd;gap:14px;margin-top:auto;margin-bottom:5mm;flex-shrink:0}
     .firma{flex:1;text-align:center}
     .fline{border-bottom:1px solid #444;height:13px;margin-bottom:3px}
-    .flbl{font-size:7.5px;color:#aaa;text-transform:uppercase;letter-spacing:1px}
+    .flbl{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:1px}
   </style>
 </head>
 <body>
