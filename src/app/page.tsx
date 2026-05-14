@@ -18,6 +18,7 @@ import RecordatoriosPage from '@/components/recordatorio';
 import NotificacionesRecordatorios from '@/components/NotificacionesRecordatorios';
 import ContadorBilletes from '@/components/ContadorBilletes';
 import SistemaPagos from '@/components/SistemaPagos';
+import FelizCumpleanos from '@/components/FelizCumpleanos';
 import {
   prepararDatosPorCaja,
   prepararDatosPorMes,
@@ -176,6 +177,7 @@ export default function DashboardPage() {
 
         {vistaActual === 'dashboard' && (
           <>
+            <FelizCumpleanos />
             <NotificacionesRecordatorios />
             <DashboardStats estadisticas={estadisticas} desde={desde} hasta={hasta} />
 
