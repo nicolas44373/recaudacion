@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { AlertCircle, CheckCircle, X, Printer, Receipt, FileText, Trash2 } from 'lucide-react';
+import CategoriaCombobox from '@/components/CategoriaCombobox';
 
 const DENOMINACIONES = [
   { valor: 100,   label: '$100',    color: 'text-red-600'     },
@@ -187,7 +188,7 @@ function abrirVentanaImpresion(html: string) {
   });
 }
 
-export default function SistemaPagos() {
+export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) {
   const [receptor, setReceptor] = useState('');
   const [responsable, setResponsable] = useState('');
   const [categoria, setCategoria] = useState('');
@@ -283,6 +284,7 @@ export default function SistemaPagos() {
       showToast('ok', `Pago a ${receptor.trim()} registrado`);
       limpiar();
       cargarPagos();
+      onRefresh?.();
     } else {
       showToast('err', `Error: ${error.message}`);
     }
@@ -372,14 +374,14 @@ export default function SistemaPagos() {
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Categoría de egreso <span className="text-red-500">*</span>
               </label>
-              <select
+              <CategoriaCombobox
                 value={categoria}
-                onChange={e => { setCategoria(e.target.value); setErrores(p => ({ ...p, categoria: '' })); }}
-                className={`w-full p-3 bg-gray-50 border rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 transition-colors ${errores.categoria ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-violet-500 hover:border-gray-400'}`}
-              >
-                <option value="">— Seleccioná una categoría —</option>
-                {CATEGORIAS_GASTOS.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+                onChange={v => { setCategoria(v); setErrores(p => ({ ...p, categoria: '' })); }}
+                opciones={CATEGORIAS_GASTOS}
+                error={!!errores.categoria}
+                ringColor="ring-violet-500"
+                selectedColor="bg-violet-50 text-violet-700"
+              />
               {errores.categoria && <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={11} />{errores.categoria}</p>}
             </div>
 

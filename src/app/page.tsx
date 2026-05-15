@@ -18,7 +18,6 @@ import RecordatoriosPage from '@/components/recordatorio';
 import NotificacionesRecordatorios from '@/components/NotificacionesRecordatorios';
 import ContadorBilletes from '@/components/ContadorBilletes';
 import SistemaPagos from '@/components/SistemaPagos';
-import FelizCumpleanos from '@/components/FelizCumpleanos';
 import {
   prepararDatosPorCaja,
   prepararDatosPorMes,
@@ -177,8 +176,7 @@ export default function DashboardPage() {
 
         {vistaActual === 'dashboard' && (
           <>
-            <FelizCumpleanos />
-            <NotificacionesRecordatorios />
+<NotificacionesRecordatorios />
             <DashboardStats estadisticas={estadisticas} desde={desde} hasta={hasta} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -199,7 +197,7 @@ export default function DashboardPage() {
         {vistaActual === 'nuevo-gasto' && <GastoForm onSuccess={refresh} />}
         {vistaActual === 'contador' && <ContadorBilletes netoEfectivo={estadisticas.dineroHoy} />}
         {vistaActual === 'recordatorios' && <RecordatoriosPage />}
-        {vistaActual === 'pagos' && <SistemaPagos />}
+        {vistaActual === 'pagos' && <SistemaPagos onRefresh={refresh} />}
       </div>
     </main>
   );

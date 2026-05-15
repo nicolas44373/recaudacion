@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import CategoriaCombobox from '@/components/CategoriaCombobox';
 import {
   AlertCircle, CheckCircle, ChevronDown, ChevronUp,
   X, MinusCircle, Calculator,
@@ -169,18 +170,14 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
           <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             Categoría <span className="text-red-500">*</span>
           </label>
-          <select
+          <CategoriaCombobox
             value={categoria}
-            onChange={e => { setCategoria(e.target.value); setErrores(p => ({ ...p, categoria: '' })); }}
-            className={`w-full p-3 bg-gray-50 border rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 transition-colors ${errores.categoria ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-red-500 hover:border-gray-400'}`}
-          >
-            <option value="">— Seleccioná una categoría —</option>
-            {Object.entries(GRUPOS_CATEGORIAS).map(([grupo, cats]) => (
-              <optgroup key={grupo} label={grupo}>
-                {cats.map(c => <option key={c} value={c}>{c}</option>)}
-              </optgroup>
-            ))}
-          </select>
+            onChange={v => { setCategoria(v); setErrores(p => ({ ...p, categoria: '' })); }}
+            opciones={Object.values(GRUPOS_CATEGORIAS).flat()}
+            error={!!errores.categoria}
+            ringColor="ring-red-500"
+            selectedColor="bg-red-50 text-red-700"
+          />
           {errores.categoria && <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={12} />{errores.categoria}</p>}
         </div>
 
