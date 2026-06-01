@@ -47,6 +47,37 @@ const colorMetodo = (metodo: string) => {
   return 'text-gray-600';
 };
 
+const formatNotas = (notas: string | null) => {
+  if (!notas) return '';
+  try {
+    const parts = notas.split('||');
+    if (parts[0] === '[PAGO]' && parts[1]) {
+      const p = JSON.parse(parts[1]);
+      const receptor = p.a || '';
+      let obs = p.observaciones || '';
+      // Clean prefix "name - obs:"
+      obs = obs.replace(/^.*?-\s*obs:\s*/i, '').trim();
+
+      const met = p.metodo || 'Efectivo';
+      let chInfo = '';
+      if (met === 'Cheque' || met === 'eCheq') {
+        const ch = p.cheque;
+        chInfo = ch ? ` (${met}: ${ch.banco} N° ${ch.serie})` : ` (${met})`;
+      } else if (met === 'Transferencia') {
+        chInfo = ' (Transf.)';
+      }
+
+      if (receptor && obs) {
+        return `${receptor}${chInfo} - Obs: ${obs}`;
+      }
+      return `${receptor}${chInfo}` || obs;
+    }
+    return notas;
+  } catch {
+    return notas;
+  }
+};
+
 export default function GastoTable({ gastos, onRefresh }: Props) {
   const [categoriaFiltro, setCategoriaFiltro] = useState('');
   const [metodoPagoFiltro, setMetodoPagoFiltro] = useState('');
@@ -63,15 +94,35 @@ export default function GastoTable({ gastos, onRefresh }: Props) {
 
   const startEditing = (g: Gasto) => {
     setEditingId(g.id);
-    setFormData({ fecha: g.fecha, categoria: g.categoria, monto: g.monto, metodo_pago: g.metodo_pago, notas: g.notas || '' });
+    let editableNotas = g.notas || '';
+    try {
+      const parts = g.notas?.split('||');
+      if (parts && parts[0] === '[PAGO]' && parts[1]) {
+        const p = JSON.parse(parts[1]);
+        editableNotas = (p.observaciones || '').replace(/^.*?-\s*obs:\s*/i, '').trim();
+      }
+    } catch {}
+    setFormData({ fecha: g.fecha, categoria: g.categoria, monto: g.monto, metodo_pago: g.metodo_pago, notas: editableNotas });
   };
   const cancelEditing = () => { setEditingId(null); setFormData({}); };
   const handleChange = (field: keyof Gasto, value: any) => setFormData(prev => ({ ...prev, [field]: value }));
 
   const saveEdit = async () => {
     if (!editingId) return;
+    const originalGasto = gastos.find(g => g.id === editingId);
+    let finalNotas = formData.notas;
+    if (originalGasto && originalGasto.notas) {
+      try {
+        const parts = originalGasto.notas.split('||');
+        if (parts[0] === '[PAGO]' && parts[1]) {
+          const p = JSON.parse(parts[1]);
+          p.observaciones = formData.notas?.trim() || '';
+          finalNotas = `${parts[0]}||${JSON.stringify(p)}`;
+        }
+      } catch {}
+    }
     const { error } = await supabase.from('gastos')
-      .update({ fecha: formData.fecha, categoria: formData.categoria, monto: formData.monto, metodo_pago: formData.metodo_pago, notas: formData.notas })
+      .update({ fecha: formData.fecha, categoria: formData.categoria, monto: formData.monto, metodo_pago: formData.metodo_pago, notas: finalNotas })
       .eq('id', editingId);
     if (!error) { cancelEditing(); onRefresh(); }
   };
@@ -148,7 +199,39 @@ export default function GastoTable({ gastos, onRefresh }: Props) {
                           {METODOS_PAGO.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
                       </td>
-                      <td className="px-4 py-2"><input type="text" value={formData.notas ?? ''} onChange={e => handleChange('notas', e.target.value)} className={`${inputCls} w-full`} /></td>
+                      <td className="px-4 py-2">
+                        {(() => {
+                          const isPago = gasto.notas?.startsWith('[PAGO]||');
+                          if (isPago) {
+                            let receptor = '';
+                            try {
+                              const parts = gasto.notas!.split('||');
+                              const p = JSON.parse(parts[1]);
+                              receptor = p.a || '';
+                            } catch {}
+                            return (
+                              <div className="flex flex-col gap-0.5 w-full min-w-[150px]">
+                                {receptor && <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">A: {receptor}</span>}
+                                <input
+                                  type="text"
+                                  placeholder="Observaciones..."
+                                  value={formData.notas ?? ''}
+                                  onChange={e => handleChange('notas', e.target.value)}
+                                  className={`${inputCls} w-full`}
+                                />
+                              </div>
+                            );
+                          }
+                          return (
+                            <input
+                              type="text"
+                              value={formData.notas ?? ''}
+                              onChange={e => handleChange('notas', e.target.value)}
+                              className={`${inputCls} w-full`}
+                            />
+                          );
+                        })()}
+                      </td>
                       <td className="px-4 py-2">
                         <div className="flex gap-2">
                           <button onClick={saveEdit} className="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"><Save size={14} /></button>
@@ -165,7 +248,9 @@ export default function GastoTable({ gastos, onRefresh }: Props) {
                         {gasto.monto > UMBRAL_ALERTA && <AlertCircle size={12} className="inline text-red-500 ml-1" />}
                       </td>
                       <td className={`px-4 py-3 font-medium ${colorMetodo(gasto.metodo_pago)}`}>{gasto.metodo_pago}</td>
-                      <td className="px-4 py-3 text-gray-700 text-xs font-bold max-w-xs truncate">{(() => { try { const p = gasto.notas?.split('||')[1]; return p ? JSON.parse(p).a : gasto.notas; } catch { return gasto.notas; } })() || <span className="italic font-normal text-gray-400">—</span>}</td>
+                      <td className="px-4 py-3 text-gray-700 text-xs font-bold max-w-xs truncate" title={formatNotas(gasto.notas) || ''}>
+                        {formatNotas(gasto.notas) || <span className="italic font-normal text-gray-400">—</span>}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button onClick={() => startEditing(gasto)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700"><Edit size={14} /></button>

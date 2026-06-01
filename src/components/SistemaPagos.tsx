@@ -37,7 +37,15 @@ const fmt = (n: number) =>
 interface PagoData {
   a: string;
   resp: string;
+  metodo: 'Efectivo' | 'Transferencia' | 'Cheque' | 'eCheq';
   billetes: Record<number, number>;
+  observaciones?: string;
+  cheque?: {
+    banco: string;
+    serie: string;
+    emision: string;
+    pago: string;
+  };
 }
 
 interface GastoPago {
@@ -53,7 +61,9 @@ function parsePago(notas: string): PagoData | null {
   try {
     const parts = notas.split('||');
     if (parts[0] !== PAGO_MARKER || !parts[1]) return null;
-    return JSON.parse(parts[1]);
+    const p = JSON.parse(parts[1]);
+    if (!p.metodo) p.metodo = 'Efectivo';
+    return p;
   } catch {
     return null;
   }
@@ -70,7 +80,7 @@ function generarHTML(
     try { return format(parseISO(fecha), 'dd/MM/yyyy'); } catch { return fecha.substring(0, 10); }
   })();
 
-  const fillasBilletes = DENOMINACIONES
+  const fillasBilletes = pagoData.billetes ? DENOMINACIONES
     .filter(d => (pagoData.billetes[d.valor] ?? 0) > 0)
     .map(d => {
       const qty = pagoData.billetes[d.valor];
@@ -80,7 +90,71 @@ function generarHTML(
         <td style="padding:2.5px 5px;border-bottom:1px solid #f0f0f0;text-align:center;">${qty}</td>
         <td style="padding:2.5px 5px;border-bottom:1px solid #f0f0f0;text-align:right;">${fmt(sub)}</td>
       </tr>`;
-    }).join('');
+    }).join('') : '';
+
+  let detailHTML = '';
+  const met = pagoData.metodo || 'Efectivo';
+  if (met === 'Cheque' || met === 'eCheq') {
+    const ch = pagoData.cheque;
+    const emisionFmt = (() => { try { return format(parseISO(ch?.emision || ''), 'dd/MM/yyyy'); } catch { return ch?.emision || ''; } })();
+    const pagoFmt = (() => { try { return format(parseISO(ch?.pago || ''), 'dd/MM/yyyy'); } catch { return ch?.pago || ''; } })();
+    detailHTML = `
+      <div class="sec-title">Detalle de Cheque (${met})</div>
+      <table style="margin-bottom:8px;">
+        <thead><tr>
+          <th>Banco</th><th>N° Serie</th><th>Emisión</th><th>Fecha Pago</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:700;">${ch?.banco || '—'}</td>
+            <td style="font-weight:700;">${ch?.serie || '—'}</td>
+            <td>${emisionFmt || '—'}</td>
+            <td>${pagoFmt || '—'}</td>
+          </tr>
+          <tr class="tot-row">
+            <td colspan="3">TOTAL</td>
+            <td>${fmt(monto)}</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+  } else if (met === 'Transferencia') {
+    detailHTML = `
+      <div class="sec-title">Detalle de Pago</div>
+      <table style="margin-bottom:8px;">
+        <thead><tr>
+          <th>Método</th><th>Concepto</th><th style="text-align:right;">Importe</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:700;">Transferencia</td>
+            <td>Transferencia Bancaria / Virtual</td>
+            <td style="text-align:right;font-weight:700;">${fmt(monto)}</td>
+          </tr>
+          <tr class="tot-row">
+            <td colspan="2">TOTAL</td>
+            <td>${fmt(monto)}</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+  } else {
+    detailHTML = `
+      <div class="sec-title">Detalle de billetes</div>
+      <table>
+        <thead><tr>
+          <th>Billete</th><th>Cant.</th><th>Subtotal</th>
+        </tr></thead>
+        <tbody>
+          ${fillasBilletes}
+          <tr class="tot-row">
+            <td colspan="2">TOTAL</td>
+            <td>${fmt(monto)}</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+  }
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -148,23 +222,11 @@ function generarHTML(
     <div class="row"><span class="lbl">A:</span><span class="val">${pagoData.a}</span></div>
     <div class="row"><span class="lbl">Responsable:</span><span class="val">${pagoData.resp}</span></div>
     <div class="row"><span class="lbl">Categoría:</span><span class="val">${categoria}</span></div>
-    <div class="row"><span class="lbl">Método:</span><span class="val">Efectivo</span></div>
+    <div class="row"><span class="lbl">Método:</span><span class="val">${met}</span></div>
     <div class="row"><span class="lbl">Fecha:</span><span class="val">${fechaFmt}</span></div>
   </div>
 
-  <div class="sec-title">Detalle de billetes</div>
-  <table>
-    <thead><tr>
-      <th>Billete</th><th>Cant.</th><th>Subtotal</th>
-    </tr></thead>
-    <tbody>
-      ${fillasBilletes}
-      <tr class="tot-row">
-        <td colspan="2">TOTAL</td>
-        <td>${fmt(monto)}</td>
-      </tr>
-    </tbody>
-  </table>
+  ${detailHTML}
 
   <div class="firmas">
     <div class="firma"><div class="fline"></div><div class="flbl">Entregado por</div></div>
@@ -194,16 +256,28 @@ export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) 
   const [categoria, setCategoria] = useState('');
   const [fecha, setFecha] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [billetes, setBilletes] = useState<Record<number, string>>({});
+  const [observaciones, setObservaciones] = useState('');
+  const [metodo, setMetodo] = useState<'Efectivo' | 'Transferencia' | 'Cheque' | 'eCheq'>('Efectivo');
+  const [montoIngresado, setMontoIngresado] = useState('');
+
+  // Detalles de Cheque
+  const [chequeBanco, setChequeBanco] = useState('');
+  const [chequeSerie, setChequeSerie] = useState('');
+  const [chequeEmision, setChequeEmision] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const [chequePago, setChequePago] = useState(() => format(new Date(), 'yyyy-MM-dd'));
+
   const [guardando, setGuardando] = useState(false);
   const [toast, setToast] = useState<{ tipo: 'ok' | 'err'; msg: string } | null>(null);
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [pagos, setPagos] = useState<GastoPago[]>([]);
   const [cargando, setCargando] = useState(true);
 
-  const total = DENOMINACIONES.reduce((acc, d) => {
-    const qty = parseInt(billetes[d.valor] || '0', 10);
-    return acc + (isNaN(qty) || qty < 0 ? 0 : qty * d.valor);
-  }, 0);
+  const total = metodo === 'Efectivo'
+    ? DENOMINACIONES.reduce((acc, d) => {
+        const qty = parseInt(billetes[d.valor] || '0', 10);
+        return acc + (isNaN(qty) || qty < 0 ? 0 : qty * d.valor);
+      }, 0)
+    : parseFloat(montoIngresado) || 0;
 
   const cargarPagos = useCallback(async () => {
     setCargando(true);
@@ -256,7 +330,20 @@ export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) 
     if (!receptor.trim()) e.receptor = 'Indicá a quién se le paga';
     if (!responsable.trim()) e.responsable = 'Indicá el responsable';
     if (!categoria) e.categoria = 'Seleccioná una categoría';
-    if (total <= 0) e.total = 'Ingresá al menos un billete';
+    
+    if (metodo === 'Efectivo') {
+      if (total <= 0) e.total = 'Ingresá al menos un billete';
+    } else {
+      const amt = parseFloat(montoIngresado);
+      if (isNaN(amt) || amt <= 0) e.monto = 'Ingresá un importe válido';
+      
+      if (metodo === 'Cheque' || metodo === 'eCheq') {
+        if (!chequeBanco.trim()) e.chequeBanco = 'Indicá el banco';
+        if (!chequeSerie.trim()) e.chequeSerie = 'Indicá el número de serie';
+        if (!chequeEmision) e.chequeEmision = 'Indicá la fecha de emisión';
+        if (!chequePago) e.chequePago = 'Indicá la fecha de pago';
+      }
+    }
     setErrores(e);
     return Object.keys(e).length === 0;
   };
@@ -265,17 +352,36 @@ export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) 
     setReceptor(''); setResponsable(''); setCategoria('');
     setFecha(format(new Date(), 'yyyy-MM-dd'));
     setBilletes({}); setErrores({});
+    setObservaciones('');
+    setMetodo('Efectivo');
+    setMontoIngresado('');
+    setChequeBanco('');
+    setChequeSerie('');
+    setChequeEmision(format(new Date(), 'yyyy-MM-dd'));
+    setChequePago(format(new Date(), 'yyyy-MM-dd'));
   };
 
   const guardar = async () => {
     if (!validar()) return;
-    const pagoData: PagoData = { a: receptor.trim(), resp: responsable.trim(), billetes: billetesNumericos() };
+    const pagoData: PagoData = {
+      a: receptor.trim(),
+      resp: responsable.trim(),
+      metodo,
+      billetes: metodo === 'Efectivo' ? billetesNumericos() : {},
+      observaciones: observaciones.trim(),
+      cheque: (metodo === 'Cheque' || metodo === 'eCheq') ? {
+        banco: chequeBanco.trim(),
+        serie: chequeSerie.trim(),
+        emision: chequeEmision,
+        pago: chequePago
+      } : undefined
+    };
     const notas = `${PAGO_MARKER}||${JSON.stringify(pagoData)}`;
     setGuardando(true);
     const { error } = await supabase.from('gastos').insert({
       categoria,
       monto: total,
-      metodo_pago: 'Efectivo',
+      metodo_pago: metodo,
       notas,
       fecha: new Date(fecha + 'T12:00:00').toISOString(),
     });
@@ -298,7 +404,19 @@ export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) 
   const imprimirActual = () => {
     if (!validar()) return;
     const num = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const pagoData: PagoData = { a: receptor.trim(), resp: responsable.trim(), billetes: billetesNumericos() };
+    const pagoData: PagoData = {
+      a: receptor.trim(),
+      resp: responsable.trim(),
+      metodo,
+      billetes: metodo === 'Efectivo' ? billetesNumericos() : {},
+      observaciones: observaciones.trim(),
+      cheque: (metodo === 'Cheque' || metodo === 'eCheq') ? {
+        banco: chequeBanco.trim(),
+        serie: chequeSerie.trim(),
+        emision: chequeEmision,
+        pago: chequePago
+      } : undefined
+    };
     abrirVentanaImpresion(generarHTML(pagoData, fecha + 'T12:00:00.000Z', categoria || '—', total, num));
   };
 
@@ -385,6 +503,31 @@ export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) 
               {errores.categoria && <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={11} />{errores.categoria}</p>}
             </div>
 
+            {/* Método de Pago */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Método de Pago <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {(['Efectivo', 'Transferencia', 'Cheque', 'eCheq'] as const).map(m => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setMetodo(m);
+                      setErrores(p => ({ ...p, total: '', monto: '', chequeBanco: '', chequeSerie: '' }));
+                    }}
+                    className={`py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all duration-150 ${metodo === m
+                      ? 'bg-violet-600 border-violet-500 text-white shadow-md'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900 hover:border-gray-300'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Fecha */}
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Fecha</label>
@@ -396,62 +539,163 @@ export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) 
               />
             </div>
 
-            {/* Detalle de billetes */}
+            {/* Observaciones */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                Detalle de billetes <span className="text-red-500">*</span>
-              </label>
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Observaciones (opcional)</label>
+              <textarea
+                placeholder="Notas u observaciones adicionales..."
+                value={observaciones}
+                onChange={e => setObservaciones(e.target.value)}
+                rows={2}
+                className="w-full p-3 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 hover:border-gray-400 transition-colors resize-none"
+              />
+            </div>
 
-                {/* Encabezado */}
-                <div className="grid grid-cols-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200">
-                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Billete</span>
-                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest text-center">Cantidad</span>
-                  <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest text-right">Subtotal</span>
+            {/* Detalle de billetes (solo Efectivo) */}
+            {metodo === 'Efectivo' && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                  Detalle de billetes <span className="text-red-500">*</span>
+                </label>
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                  {/* Encabezado */}
+                  <div className="grid grid-cols-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200">
+                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Billete</span>
+                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest text-center">Cantidad</span>
+                    <span className="text-[10px] text-gray-400 uppercase font-bold tracking-widest text-right">Subtotal</span>
+                  </div>
+
+                  {/* Filas */}
+                  <div className="divide-y divide-gray-100">
+                    {DENOMINACIONES.map((d, idx) => {
+                      const raw = billetes[d.valor] ?? '';
+                      const qty = parseInt(raw || '0', 10);
+                      const subtotal = isNaN(qty) || qty < 0 ? 0 : qty * d.valor;
+                      return (
+                        <div key={d.valor} className="grid grid-cols-3 items-center px-5 py-3 hover:bg-gray-50 transition-colors">
+                          <span className={`font-bold text-sm tabular-nums ${d.color}`}>{d.label}</span>
+                          <div className="flex justify-center">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={raw}
+                              onChange={e => setBillete(d.valor, e.target.value)}
+                              onFocus={e => e.target.select()}
+                              placeholder="0"
+                              tabIndex={idx + 1}
+                              className="w-20 text-center bg-gray-50 border border-gray-300 rounded-lg px-2 py-1.5 text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500 tabular-nums"
+                            />
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-sm font-semibold tabular-nums ${subtotal > 0 ? d.color : 'text-gray-300'}`}>
+                              {subtotal > 0 ? fmt(subtotal) : '—'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Total */}
+                  <div className="px-5 py-4 bg-gray-50 border-t-2 border-gray-900 flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-600 uppercase tracking-wide">Total a pagar</span>
+                    <span className={`text-3xl font-black tabular-nums ${total > 0 ? 'text-gray-900' : 'text-gray-300'}`}>
+                      {fmt(total)}
+                    </span>
+                  </div>
+                </div>
+                {errores.total && <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={11} />{errores.total}</p>}
+              </div>
+            )}
+
+            {/* Importe Transferencia */}
+            {metodo === 'Transferencia' && (
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Importe de Transferencia <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg">$</span>
+                  <input
+                    type="number"
+                    placeholder="0"
+                    value={montoIngresado}
+                    onChange={e => { setMontoIngresado(e.target.value); setErrores(p => ({ ...p, monto: '' })); }}
+                    className={`w-full pl-9 pr-4 py-3.5 bg-gray-50 border rounded-xl text-gray-900 text-xl font-bold focus:outline-none focus:ring-2 transition-colors ${errores.monto ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-violet-500 hover:border-gray-400'}`}
+                  />
+                </div>
+                {errores.monto && <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={11} />{errores.monto}</p>}
+              </div>
+            )}
+
+            {/* Detalles de Cheque / eCheq */}
+            {(metodo === 'Cheque' || metodo === 'eCheq') && (
+              <div className="space-y-4 border border-violet-100 bg-violet-50/20 p-4 rounded-xl">
+                <h3 className="text-xs font-bold text-violet-700 uppercase tracking-wider">Datos del Cheque</h3>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Banco <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="Nombre del banco"
+                      value={chequeBanco}
+                      onChange={e => { setChequeBanco(e.target.value); setErrores(p => ({ ...p, chequeBanco: '' })); }}
+                      className={`w-full p-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 transition-colors ${errores.chequeBanco ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-violet-500'}`}
+                    />
+                    {errores.chequeBanco && <p className="text-red-600 text-[11px] mt-1 flex items-center gap-1"><AlertCircle size={10} />{errores.chequeBanco}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">N° de Serie <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="Número o serie"
+                      value={chequeSerie}
+                      onChange={e => { setChequeSerie(e.target.value); setErrores(p => ({ ...p, chequeSerie: '' })); }}
+                      className={`w-full p-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 transition-colors ${errores.chequeSerie ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-violet-500'}`}
+                    />
+                    {errores.chequeSerie && <p className="text-red-600 text-[11px] mt-1 flex items-center gap-1"><AlertCircle size={10} />{errores.chequeSerie}</p>}
+                  </div>
                 </div>
 
-                {/* Filas */}
-                <div className="divide-y divide-gray-100">
-                  {DENOMINACIONES.map((d, idx) => {
-                    const raw = billetes[d.valor] ?? '';
-                    const qty = parseInt(raw || '0', 10);
-                    const subtotal = isNaN(qty) || qty < 0 ? 0 : qty * d.valor;
-                    return (
-                      <div key={d.valor} className="grid grid-cols-3 items-center px-5 py-3 hover:bg-gray-50 transition-colors">
-                        <span className={`font-bold text-sm tabular-nums ${d.color}`}>{d.label}</span>
-                        <div className="flex justify-center">
-                          <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={raw}
-                            onChange={e => setBillete(d.valor, e.target.value)}
-                            onFocus={e => e.target.select()}
-                            placeholder="0"
-                            tabIndex={idx + 1}
-                            className="w-20 text-center bg-gray-50 border border-gray-300 rounded-lg px-2 py-1.5 text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-violet-500 tabular-nums"
-                          />
-                        </div>
-                        <div className="text-right">
-                          <span className={`text-sm font-semibold tabular-nums ${subtotal > 0 ? d.color : 'text-gray-300'}`}>
-                            {subtotal > 0 ? fmt(subtotal) : '—'}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Fecha de Emisión <span className="text-red-500">*</span></label>
+                    <input
+                      type="date"
+                      value={chequeEmision}
+                      onChange={e => { setChequeEmision(e.target.value); setErrores(p => ({ ...p, chequeEmision: '' })); }}
+                      className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Fecha de Pago / Cobro <span className="text-red-500">*</span></label>
+                    <input
+                      type="date"
+                      value={chequePago}
+                      onChange={e => { setChequePago(e.target.value); setErrores(p => ({ ...p, chequePago: '' })); }}
+                      className="w-full p-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    />
+                  </div>
                 </div>
 
-                {/* Total */}
-                <div className="px-5 py-4 bg-gray-50 border-t-2 border-gray-900 flex items-center justify-between">
-                  <span className="text-sm font-bold text-gray-600 uppercase tracking-wide">Total a pagar</span>
-                  <span className={`text-3xl font-black tabular-nums ${total > 0 ? 'text-gray-900' : 'text-gray-300'}`}>
-                    {fmt(total)}
-                  </span>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Importe <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={montoIngresado}
+                      onChange={e => { setMontoIngresado(e.target.value); setErrores(p => ({ ...p, monto: '' })); }}
+                      className={`w-full pl-7 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 text-lg font-bold focus:outline-none focus:ring-2 transition-colors ${errores.monto ? 'border-red-400 focus:ring-red-500' : 'border-gray-300 focus:ring-violet-500'}`}
+                    />
+                  </div>
+                  {errores.monto && <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={11} />{errores.monto}</p>}
                 </div>
               </div>
-              {errores.total && <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1"><AlertCircle size={11} />{errores.total}</p>}
-            </div>
+            )}
 
             {/* Botones */}
             <div className="flex gap-3 pt-1">
@@ -522,7 +766,12 @@ export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) 
                           </div>
                           <p className="font-semibold text-gray-900 text-sm">A: {pago.parsed.a}</p>
                           <p className="text-xs text-gray-500 mt-0.5">Resp: {pago.parsed.resp}</p>
-                          <p className="text-xs text-gray-400 mt-1">
+                          {pago.parsed.observaciones && (
+                            <p className="text-xs text-gray-600 italic mt-1 bg-gray-50 p-1.5 rounded-lg border border-gray-100">
+                              <span className="font-semibold text-gray-400">Obs:</span> {pago.parsed.observaciones.replace(/^.*?-\s*obs:\s*/i, '').trim()}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-1.5">
                             {Object.entries(pago.parsed.billetes)
                               .map(([val, qty]) => `${qty}×$${Number(val).toLocaleString('es-AR')}`)
                               .join(' · ')}

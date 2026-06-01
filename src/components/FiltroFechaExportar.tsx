@@ -1,7 +1,7 @@
 'use client';
 import { Download, Calendar, FileText } from 'lucide-react';
 import { format, parseISO, isValid, subDays, startOfMonth, startOfWeek } from 'date-fns';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 import { saveAs } from 'file-saver';
 import React from 'react';
 
@@ -20,8 +20,9 @@ interface Props {
   hasta: string;
   setDesde: (_: string) => void;
   setHasta: (_: string) => void;
-  datos: Item[];
-  tipo: 'ingresos' | 'gastos';
+  ingresos: Item[];
+  gastos: Item[];
+  vistaActual: 'dashboard' | 'contador' | 'ingresos' | 'formulario' | 'gastos' | 'nuevo-gasto' | 'recordatorios' | 'pagos';
 }
 
 const hoy = () => format(new Date(), 'yyyy-MM-dd');
@@ -46,13 +47,45 @@ const fmtFecha = (fecha: string) => {
 const fmtMoney = (n: number) =>
   n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 });
 
+const cleanNotas = (notas?: string): string => {
+  if (!notas) return '';
+  try {
+    const parts = notas.split('||');
+    if (parts[0] === '[PAGO]' && parts[1]) {
+      const p = JSON.parse(parts[1]);
+      const receptor = p.a || '';
+      let obs = p.observaciones || '';
+      // Clean prefix "name - obs:"
+      obs = obs.replace(/^.*?-\s*obs:\s*/i, '').trim();
+
+      const met = p.metodo || 'Efectivo';
+      let chInfo = '';
+      if (met === 'Cheque' || met === 'eCheq') {
+        const ch = p.cheque;
+        chInfo = ch ? ` (${met}: ${ch.banco} N° ${ch.serie})` : ` (${met})`;
+      } else if (met === 'Transferencia') {
+        chInfo = ' (Transf.)';
+      }
+
+      if (receptor && obs) {
+        return `${receptor}${chInfo} - Obs: ${obs}`;
+      }
+      return `${receptor}${chInfo}` || obs;
+    }
+    return notas;
+  } catch {
+    return notas;
+  }
+};
+
 // ── REPORTE HTML ──────────────────────────────────────────────────────────────
 
 function generarReporteHTML(datos: Item[], tipo: 'ingresos' | 'gastos', desde: string, hasta: string): string {
   const esIngreso = tipo === 'ingresos';
   const titulo = esIngreso ? 'REPORTE DE INGRESOS' : 'REPORTE DE EGRESOS';
-  const accentColor = esIngreso ? '#059669' : '#dc2626';
-  const accentLight = esIngreso ? '#ecfdf5' : '#fef2f2';
+  const accentColor = esIngreso ? '#0f766e' : '#b91c1c';
+  const accentLight = esIngreso ? '#f0fdfa' : '#fef2f2';
+  const accentBorder = esIngreso ? '#99f6e4' : '#fecaca';
 
   const datosReales = esIngreso
     ? datos.filter(i => i.categoria !== CATEGORIA_INICIO_DIA)
@@ -86,23 +119,23 @@ function generarReporteHTML(datos: Item[], tipo: 'ingresos' | 'gastos', desde: s
     .map(i => {
       const esAp = i.categoria === CATEGORIA_INICIO_DIA;
       return `<tr style="${esAp ? 'opacity:0.55;' : ''}">
-        <td>${fmtFecha(i.fecha)}</td>
-        <td>${esAp ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">APERTURA</span>' : (i.categoria || '—')}</td>
-        <td style="text-align:right;font-weight:600;color:${esAp ? '#d97706' : accentColor};">${fmtMoney(Number(i.monto))}</td>
-        <td>${i.metodo_pago || '—'}</td>
-        <td style="color:#999;font-size:11.5px;">${i.notas || '—'}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-weight: 500;">${fmtFecha(i.fecha)}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">${esAp ? '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:0.5px;">APERTURA</span>' : (i.categoria || '—')}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align:right;font-weight:700;color:${esAp ? '#b45309' : accentColor};">${fmtMoney(Number(i.monto))}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-weight: 500; color: #475569;">${i.metodo_pago || '—'}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color:#475569;font-size:11px;">${cleanNotas(i.notas) || '—'}</td>
       </tr>`;
     }).join('');
 
   const filasCat = catOrdenadas.map(([cat, monto]) => {
     const pct = total > 0 ? ((monto / total) * 100).toFixed(1) : '0.0';
     return `<tr>
-      <td>${cat}</td>
-      <td style="text-align:right;font-weight:600;">${fmtMoney(monto)}</td>
-      <td style="text-align:right;color:#888;">${pct}%</td>
-      <td style="padding:8px 12px;">
-        <div style="background:#f0f0f0;border-radius:4px;height:8px;width:100%;max-width:180px;">
-          <div style="background:${accentColor};height:8px;border-radius:4px;width:${pct}%;"></div>
+      <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-weight: 500;">${cat}</td>
+      <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align:right;font-weight:700;color:#0f172a;">${fmtMoney(monto)}</td>
+      <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align:right;color:#64748b;font-weight:600;">${pct}%</td>
+      <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9;">
+        <div style="background:#e2e8f0;border-radius:4px;height:6px;width:100%;max-width:180px;">
+          <div style="background:${accentColor};height:6px;border-radius:4px;width:${pct}%;"></div>
         </div>
       </td>
     </tr>`;
@@ -111,9 +144,9 @@ function generarReporteHTML(datos: Item[], tipo: 'ingresos' | 'gastos', desde: s
   const filasMetodo = metOrdenados.map(([met, monto]) => {
     const pct = total > 0 ? ((monto / total) * 100).toFixed(1) : '0.0';
     return `<tr>
-      <td>${met}</td>
-      <td style="text-align:right;font-weight:600;">${fmtMoney(monto)}</td>
-      <td style="text-align:right;color:#888;">${pct}%</td>
+      <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-weight: 500;">${met}</td>
+      <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align:right;font-weight:700;color:#0f172a;">${fmtMoney(monto)}</td>
+      <td style="padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align:right;color:#64748b;font-weight:600;">${pct}%</td>
     </tr>`;
   }).join('');
 
@@ -122,263 +155,605 @@ function generarReporteHTML(datos: Item[], tipo: 'ingresos' | 'gastos', desde: s
 <head>
   <meta charset="UTF-8">
   <title>${titulo} — Alenort</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    @page { size: A4 portrait; margin: 12mm 14mm; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #111; background: #fff; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      font-size: 11.5px;
+      color: #1e293b;
+      background: #f1f5f9;
+      padding: 30px 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+ 
+    /* TOOLBAR VISIBLE ONLY ON SCREEN */
+    .toolbar {
+      width: 100%;
+      max-width: 210mm;
+      background: #0f172a;
+      padding: 12px 20px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+    }
+    .toolbar-title {
+      color: #f8fafc;
+      font-weight: 700;
+      font-size: 13.5px;
+      letter-spacing: 0.5px;
+    }
+    .btn-print {
+      background: #0f766e;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+    .btn-print:hover {
+      background: #0d9488;
+      transform: translateY(-1px);
+    }
+    .btn-print:active {
+      transform: translateY(0);
+    }
+
+    /* A4 PAGE CONTAINER CENTERED ON SCREEN */
+    .page-container {
+      width: 210mm;
+      background: #fff;
+      padding: 15mm;
+      border-radius: 12px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+    }
 
     /* HEADER */
-    .hdr { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 3px solid #111; }
-    .brand { font-size: 36px; font-weight: 900; letter-spacing: 8px; line-height: 1; }
-    .brand-sub { font-size: 9px; letter-spacing: 3px; color: #888; text-transform: uppercase; margin-top: 4px; }
+    .hdr { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 14px; margin-bottom: 22px; border-bottom: 3px solid #0f172a; }
+    .brand { font-size: 38px; font-weight: 900; letter-spacing: 6px; line-height: 1; color: #0f172a; }
+    .brand-sub { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: #64748b; text-transform: uppercase; margin-top: 5px; }
     .hdr-right { text-align: right; }
-    .rep-title { font-size: 18px; font-weight: 800; color: ${accentColor}; letter-spacing: 1px; }
-    .rep-period { font-size: 11px; color: #666; margin-top: 3px; }
-    .rep-gen { font-size: 10px; color: #bbb; margin-top: 2px; }
-
+    .rep-title { font-size: 19px; font-weight: 800; color: ${accentColor}; letter-spacing: 0.5px; }
+    .rep-period { font-size: 11px; color: #475569; margin-top: 4px; font-weight: 500; }
+    .rep-gen { font-size: 10px; color: #94a3b8; margin-top: 3px; }
+ 
     /* STAT CARDS */
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-    .stat { background: ${accentLight}; border: 1px solid ${accentColor}22; border-radius: 10px; padding: 12px 14px; }
-    .stat-label { font-size: 9px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1.5px; }
-    .stat-value { font-size: 17px; font-weight: 900; color: ${accentColor}; margin-top: 4px; line-height: 1; }
-    .stat-sub { font-size: 10px; color: #999; margin-top: 3px; }
-
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+    .stat { background: ${accentLight}; border: 1px solid ${accentBorder}; border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .stat-label { font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .stat-value { font-size: 18px; font-weight: 800; color: ${accentColor}; margin-top: 5px; line-height: 1; }
+    .stat-sub { font-size: 10px; color: #64748b; margin-top: 4px; font-weight: 500; }
+ 
     /* SECTION TITLES */
-    .section-title { font-size: 10px; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; margin-top: 18px; }
-
+    .section-title { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; margin-top: 22px; }
+ 
     /* TABLES */
-    table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-    thead tr { background: #111; }
-    thead th { color: #fff; font-weight: 700; padding: 8px 12px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px; }
+    thead tr { background: #0f172a; }
+    thead th { color: #fff; font-weight: 600; padding: 8px 10px; text-align: left; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.8px; border: none; }
     thead th:last-child { text-align: right; }
-    tbody tr { border-bottom: 1px solid #f0f0f0; }
-    tbody tr:hover { background: #fafafa; }
-    tbody td { padding: 7px 12px; }
-
+    tbody tr { border-bottom: 1px solid #f1f5f9; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 6px 10px; }
+ 
     /* SPLIT LAYOUT */
-    .two-col { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; margin-bottom: 6px; }
-
+    .two-col { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-bottom: 8px; }
+ 
     /* TOTALS */
-    .total-row td { font-weight: 900; font-size: 13px; background: #f8f8f8; border-top: 2px solid #111 !important; }
-
-    /* APERTURA */
-    .apertura-row { background: #fffbeb; color: #92400e; }
-
+    .total-row td { font-weight: 800; font-size: 12px; background: #f8fafc; border-top: 2px solid #0f172a !important; color: #0f172a; padding: 10px 10px; }
+    .total-row td:last-child { text-align: right; }
+ 
     /* FOOTER */
-    .footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #eee; display: flex; justify-content: space-between; font-size: 10px; color: #bbb; }
-
+    .footer { margin-top: auto; padding-top: 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 9.5px; color: #94a3b8; font-weight: 500; }
+ 
+    /* PRINT STYLES OVERRIDE */
     @media print {
-      body { font-size: 11px; }
-      .stats { gap: 8px; }
+      body { background: #fff; padding: 0; }
+      .toolbar { display: none !important; }
+      .page-container {
+        width: 100%;
+        box-shadow: none;
+        padding: 0;
+        border-radius: 0;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 15mm;
+      }
     }
   </style>
 </head>
 <body>
-
-  <!-- HEADER -->
-  <div class="hdr">
-    <div>
-      <div class="brand">ALENORT</div>
-      <div class="brand-sub">Sistema de Recaudación</div>
-    </div>
-    <div class="hdr-right">
-      <div class="rep-title">${titulo}</div>
-      <div class="rep-period">Período: ${fmtFecha(desde)} al ${fmtFecha(hasta)}</div>
-      <div class="rep-gen">Generado el ${format(new Date(), 'dd/MM/yyyy')} a las ${format(new Date(), 'HH:mm')}</div>
-    </div>
+ 
+  <!-- TOOLBAR (SCREEN ONLY) -->
+  <div class="toolbar">
+    <div class="toolbar-title">Vista de Impresión — ALENORT</div>
+    <button onclick="window.print()" class="btn-print">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+      Imprimir Reporte
+    </button>
   </div>
 
-  <!-- STATS -->
-  <div class="stats">
-    <div class="stat">
-      <div class="stat-label">Total ${esIngreso ? 'real' : 'egresos'}</div>
-      <div class="stat-value">${fmtMoney(total)}</div>
-      <div class="stat-sub">${datosReales.length} registro${datosReales.length !== 1 ? 's' : ''}</div>
+  <!-- A4 CONTAINER -->
+  <div class="page-container">
+
+    <!-- HEADER -->
+    <div class="hdr">
+      <div>
+        <div class="brand">ALENORT</div>
+        <div class="brand-sub">Sistema de Recaudación</div>
+      </div>
+      <div class="hdr-right">
+        <div class="rep-title">${titulo}</div>
+        <div class="rep-period">Período: ${fmtFecha(desde)} al ${fmtFecha(hasta)}</div>
+        <div class="rep-gen">Generado el ${format(new Date(), 'dd/MM/yyyy')} a las ${format(new Date(), 'HH:mm')}</div>
+      </div>
     </div>
-    <div class="stat">
-      <div class="stat-label">Promedio por registro</div>
-      <div class="stat-value">${fmtMoney(Math.round(promedio))}</div>
-      <div class="stat-sub">&nbsp;</div>
+ 
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total ${esIngreso ? 'real' : 'egresos'}</div>
+        <div class="stat-value">${fmtMoney(total)}</div>
+        <div class="stat-sub">${datosReales.length} registro${datosReales.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Promedio por registro</div>
+        <div class="stat-value">${fmtMoney(Math.round(promedio))}</div>
+        <div class="stat-sub">&nbsp;</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Categorías distintas</div>
+        <div class="stat-value">${porCategoria.size}</div>
+        <div class="stat-sub">&nbsp;</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">${esIngreso ? 'Apertura del día' : 'Total bruto'}</div>
+        <div class="stat-value">${esIngreso ? fmtMoney(apertura) : fmtMoney(totalBruto)}</div>
+        <div class="stat-sub">${esIngreso ? 'No incluido en total' : 'Sin filtros'}</div>
+      </div>
     </div>
-    <div class="stat">
-      <div class="stat-label">Categorías distintas</div>
-      <div class="stat-value">${porCategoria.size}</div>
-      <div class="stat-sub">&nbsp;</div>
+ 
+    <!-- BREAKDOWNS -->
+    <div class="two-col">
+      <div>
+        <div class="section-title">Desglose por categoría</div>
+        <table>
+          <thead><tr>
+            <th style="padding: 8px 10px;">Categoría</th>
+            <th style="text-align:right; padding: 8px 10px;">Monto</th>
+            <th style="text-align:right; padding: 8px 10px;">%</th>
+            <th style="padding: 8px 10px;">Distribución</th>
+          </tr></thead>
+          <tbody>
+            ${filasCat}
+            <tr class="total-row">
+              <td style="padding: 10px 10px;">TOTAL</td>
+              <td style="text-align:right; padding: 10px 10px;">${fmtMoney(total)}</td>
+              <td style="text-align:right; padding: 10px 10px;">100%</td>
+              <td style="padding: 10px 10px;"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="section-title">Por método de pago</div>
+        <table>
+          <thead><tr>
+            <th style="padding: 8px 10px;">Método</th>
+            <th style="text-align:right; padding: 8px 10px;">Monto</th>
+            <th style="text-align:right; padding: 8px 10px;">%</th>
+          </tr></thead>
+          <tbody>
+            ${filasMetodo}
+            <tr class="total-row">
+              <td style="padding: 10px 10px;">TOTAL</td>
+              <td style="text-align:right; padding: 10px 10px;">${fmtMoney(total)}</td>
+              <td style="text-align:right; padding: 10px 10px;">100%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-    <div class="stat">
-      <div class="stat-label">${esIngreso ? 'Apertura del día' : 'Total bruto'}</div>
-      <div class="stat-value">${esIngreso ? fmtMoney(apertura) : fmtMoney(totalBruto)}</div>
-      <div class="stat-sub">${esIngreso ? 'No incluido en total' : 'Sin filtros'}</div>
+ 
+    <!-- DETALLE -->
+    <div class="section-title" style="margin-top:22px;">Detalle de transacciones</div>
+    <table>
+      <thead><tr>
+        <th style="padding: 8px 10px;">Fecha</th>
+        <th style="padding: 8px 10px;">Categoría</th>
+        <th style="text-align:right; padding: 8px 10px;">Monto</th>
+        <th style="padding: 8px 10px;">Método</th>
+        <th style="padding: 8px 10px;">Notas</th>
+      </tr></thead>
+      <tbody>
+        ${filasDetalle}
+        <tr class="total-row">
+          <td colspan="2" style="padding: 10px 10px;">TOTAL REAL</td>
+          <td style="text-align:right; padding: 10px 10px;">${fmtMoney(total)}</td>
+          <td colspan="2" style="padding: 10px 10px;"></td>
+        </tr>
+      </tbody>
+    </table>
+ 
+    <!-- FOOTER -->
+    <div class="footer">
+      <span>Alenort — Sistema de Recaudación</span>
+      <span>Reporte generado el ${format(new Date(), "dd/MM/yyyy 'a las' HH:mm")}</span>
     </div>
+
   </div>
-
-  <!-- BREAKDOWNS -->
-  <div class="two-col">
-    <div>
-      <div class="section-title">Desglose por categoría</div>
-      <table>
-        <thead><tr>
-          <th>Categoría</th>
-          <th style="text-align:right">Monto</th>
-          <th style="text-align:right">%</th>
-          <th>Distribución</th>
-        </tr></thead>
-        <tbody>
-          ${filasCat}
-          <tr class="total-row">
-            <td>TOTAL</td>
-            <td style="text-align:right">${fmtMoney(total)}</td>
-            <td style="text-align:right">100%</td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div>
-      <div class="section-title">Por método de pago</div>
-      <table>
-        <thead><tr>
-          <th>Método</th>
-          <th style="text-align:right">Monto</th>
-          <th style="text-align:right">%</th>
-        </tr></thead>
-        <tbody>
-          ${filasMetodo}
-          <tr class="total-row">
-            <td>TOTAL</td>
-            <td style="text-align:right">${fmtMoney(total)}</td>
-            <td style="text-align:right">100%</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- DETALLE -->
-  <div class="section-title" style="margin-top:22px;">Detalle de transacciones</div>
-  <table>
-    <thead><tr>
-      <th>Fecha</th>
-      <th>Categoría</th>
-      <th style="text-align:right">Monto</th>
-      <th>Método</th>
-      <th>Notas</th>
-    </tr></thead>
-    <tbody>
-      ${filasDetalle}
-      <tr class="total-row">
-        <td colspan="2">TOTAL REAL</td>
-        <td style="text-align:right">${fmtMoney(total)}</td>
-        <td colspan="2"></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- FOOTER -->
-  <div class="footer">
-    <span>Alenort — Sistema de Recaudación</span>
-    <span>Reporte generado el ${format(new Date(), "dd/MM/yyyy 'a las' HH:mm")}</span>
-  </div>
-
+ 
 </body>
 </html>`;
 }
 
-// ── EXCEL PROFESIONAL ─────────────────────────────────────────────────────────
+function exportarExcelPro(ingresos: Item[], gastos: Item[], desde: string, hasta: string) {
+  // 1. Color Palettes
+  const PALETTE = {
+    headerBg: '0F766E',      // Teal
+    headerText: 'FFFFFF',
+    border: 'CBD5E1',        // Slate 200 (light gray)
+    zebraEven: 'F8FAFC',     // Slate 50 (very light zebra gray)
+    textDark: '1E293B',
+    accentText: '0F766E',
+    titleBg: '0F172A',       // Slate 900
+    titleText: 'FFFFFF',
+  };
 
-function exportarExcelPro(datos: Item[], tipo: 'ingresos' | 'gastos', desde: string, hasta: string) {
-  const esIngreso = tipo === 'ingresos';
-  const datosReales = esIngreso ? datos.filter(i => i.categoria !== CATEGORIA_INICIO_DIA) : datos;
-  const total = datosReales.reduce((s, i) => s + Number(i.monto), 0);
+  // 2. Custom Styles
+  const STYLES = {
+    title: {
+      font: { name: 'Arial', sz: 14, bold: true, color: { rgb: PALETTE.titleText } },
+      fill: { fgColor: { rgb: PALETTE.titleBg } },
+      alignment: { horizontal: 'center', vertical: 'center' }
+    },
+    subtitle: {
+      font: { name: 'Arial', sz: 9, italic: true, color: { rgb: '64748B' } },
+      alignment: { horizontal: 'left', vertical: 'center' }
+    },
+    header: {
+      font: { name: 'Arial', sz: 10, bold: true, color: { rgb: PALETTE.headerText } },
+      fill: { fgColor: { rgb: PALETTE.headerBg } },
+      alignment: { horizontal: 'left', vertical: 'center' },
+      border: {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'medium', color: { rgb: '000000' } }
+      }
+    },
+    headerRight: {
+      font: { name: 'Arial', sz: 10, bold: true, color: { rgb: PALETTE.headerText } },
+      fill: { fgColor: { rgb: PALETTE.headerBg } },
+      alignment: { horizontal: 'right', vertical: 'center' },
+      border: {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'medium', color: { rgb: '000000' } }
+      }
+    },
+    data: {
+      font: { name: 'Arial', sz: 10, color: { rgb: PALETTE.textDark } },
+      border: {
+        bottom: { style: 'thin', color: { rgb: PALETTE.border } }
+      }
+    },
+    dataEven: {
+      font: { name: 'Arial', sz: 10, color: { rgb: PALETTE.textDark } },
+      fill: { fgColor: { rgb: PALETTE.zebraEven } },
+      border: {
+        bottom: { style: 'thin', color: { rgb: PALETTE.border } }
+      }
+    },
+    dataRight: {
+      font: { name: 'Arial', sz: 10, color: { rgb: PALETTE.textDark } },
+      alignment: { horizontal: 'right' },
+      border: {
+        bottom: { style: 'thin', color: { rgb: PALETTE.border } }
+      }
+    },
+    dataRightEven: {
+      font: { name: 'Arial', sz: 10, color: { rgb: PALETTE.textDark } },
+      fill: { fgColor: { rgb: PALETTE.zebraEven } },
+      alignment: { horizontal: 'right' },
+      border: {
+        bottom: { style: 'thin', color: { rgb: PALETTE.border } }
+      }
+    },
+    total: {
+      font: { name: 'Arial', sz: 10, bold: true, color: { rgb: '000000' } },
+      fill: { fgColor: { rgb: 'F1F5F9' } },
+      border: {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'double', color: { rgb: '000000' } }
+      }
+    },
+    totalRight: {
+      font: { name: 'Arial', sz: 10, bold: true, color: { rgb: '000000' } },
+      fill: { fgColor: { rgb: 'F1F5F9' } },
+      alignment: { horizontal: 'right' },
+      border: {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'double', color: { rgb: '000000' } }
+      }
+    },
+    summaryLabel: {
+      font: { name: 'Arial', sz: 10, bold: true, color: { rgb: '000000' } },
+      border: { bottom: { style: 'thin', color: { rgb: PALETTE.border } } }
+    },
+    summaryValue: {
+      font: { name: 'Arial', sz: 10, bold: true, color: { rgb: PALETTE.accentText } },
+      border: { bottom: { style: 'thin', color: { rgb: PALETTE.border } } }
+    },
+    summaryDesc: {
+      font: { name: 'Arial', sz: 9, italic: true, color: { rgb: '64748B' } },
+      border: { bottom: { style: 'thin', color: { rgb: PALETTE.border } } }
+    }
+  };
+
+  const makeCell = (val: any, styleType: keyof typeof STYLES, numFormat?: string, formula?: string) => {
+    const cellStyle = { ...STYLES[styleType] };
+    const isNum = typeof val === 'number';
+    const c: any = {
+      v: val,
+      t: isNum ? 'n' : 's',
+      s: cellStyle
+    };
+    if (numFormat) {
+      cellStyle.numFmt = numFormat;
+      c.z = numFormat;
+    }
+    if (formula) c.f = formula;
+    return c;
+  };
 
   const wb = XLSX.utils.book_new();
 
-  // ── Hoja 1: Detalle ──────────────────────────
-  const detalleData: (string | number)[][] = [
-    [`ALENORT — ${esIngreso ? 'REPORTE DE INGRESOS' : 'REPORTE DE EGRESOS'}`],
-    [`Período: ${fmtFecha(desde)} al ${fmtFecha(hasta)}   |   Generado: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`],
+  const ingresosLen = ingresos.length;
+  const gastosLen = gastos.length;
+
+  // 1. Prepare data for Resumen Alenort
+  const ingresosReales = ingresos.filter(i => i.categoria !== CATEGORIA_INICIO_DIA);
+  const totalIngresosReal = ingresosReales.reduce((s, i) => s + Number(i.monto), 0);
+  const totalIngresosInicio = ingresos.filter(i => i.categoria === CATEGORIA_INICIO_DIA).reduce((s, i) => s + Number(i.monto), 0);
+  const totalIngresosBruto = ingresos.reduce((s, i) => s + Number(i.monto), 0);
+  const totalGastos = gastos.reduce((s, i) => s + Number(i.monto), 0);
+  const balanceNeto = totalIngresosReal - totalGastos;
+
+  const resumenData: any[][] = [
+    [makeCell('ALENORT — CONTROL DE RECAUDACIÓN Y BALANCE', 'title')],
+    [makeCell(`Período: ${fmtFecha(desde)} al ${fmtFecha(hasta)}   |   Generado: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 'subtitle')],
     [],
-    ['FECHA', 'CATEGORÍA', 'MONTO ($)', 'MÉTODO DE PAGO', 'NOTAS'],
-    ...[...datos]
-      .sort((a, b) => a.fecha.localeCompare(b.fecha))
-      .map(i => [
-        fmtFecha(i.fecha),
-        i.categoria || 'Sin categoría',
-        Number(i.monto),
-        i.metodo_pago || '',
-        i.notas || '',
-      ]),
+    [
+      makeCell('CONCEPTO', 'header'),
+      makeCell('VALOR ($)', 'headerRight'),
+      makeCell('REGISTROS', 'headerRight'),
+      makeCell('DESCRIPCIÓN', 'header')
+    ],
+    [
+      makeCell('Total Ingresos (Real)', 'summaryLabel'),
+      ingresosLen > 0 ? makeCell(totalIngresosReal, 'summaryValue', '$#,##0') : makeCell(0, 'summaryValue', '$#,##0'),
+      ingresosLen > 0 ? makeCell(ingresosReales.length, 'dataRight', '0') : makeCell(0, 'dataRight', '0'),
+      makeCell('Suma de ingresos excluyendo Apertura del Día', 'summaryDesc')
+    ],
+    [
+      makeCell('Apertura de Caja (Inicio del Día)', 'summaryLabel'),
+      ingresosLen > 0 ? makeCell(totalIngresosInicio, 'summaryValue', '$#,##0') : makeCell(0, 'summaryValue', '$#,##0'),
+      ingresosLen > 0 ? makeCell(ingresos.filter(i => i.categoria === CATEGORIA_INICIO_DIA).length, 'dataRight', '0') : makeCell(0, 'dataRight', '0'),
+      makeCell('Dinero inicial en caja (no computa en balance neto)', 'summaryDesc')
+    ],
+    [
+      makeCell('Total Ingresos (Bruto)', 'summaryLabel'),
+      ingresosLen > 0 ? makeCell(totalIngresosBruto, 'summaryValue', '$#,##0') : makeCell(0, 'summaryValue', '$#,##0'),
+      ingresosLen > 0 ? makeCell(ingresosLen, 'dataRight', '0') : makeCell(0, 'dataRight', '0'),
+      makeCell('Total bruto acumulado en ingresos', 'summaryDesc')
+    ],
+    [
+      makeCell('Total Egresos (Gastos / Pagos)', 'summaryLabel'),
+      gastosLen > 0 ? makeCell(totalGastos, 'summaryValue', '$#,##0') : makeCell(0, 'summaryValue', '$#,##0'),
+      gastosLen > 0 ? makeCell(gastosLen, 'dataRight', '0') : makeCell(0, 'dataRight', '0'),
+      makeCell('Suma total de egresos registrados', 'summaryDesc')
+    ],
     [],
-    ['', 'TOTAL REAL', total, '', ''],
-    ...(esIngreso ? [['', 'TOTAL BRUTO', datos.reduce((s, i) => s + Number(i.monto), 0), '', '']] : []),
+    [
+      makeCell('BALANCE NETO (Real - Egresos)', 'header'),
+      makeCell(balanceNeto, 'headerRight', '$#,##0'),
+      makeCell('', 'header'),
+      makeCell('Diferencia neta (Ingresos Reales - Egresos)', 'header')
+    ],
   ];
 
-  const wsDetalle = XLSX.utils.aoa_to_sheet(detalleData);
-  wsDetalle['!cols'] = [{ wch: 14 }, { wch: 36 }, { wch: 18 }, { wch: 18 }, { wch: 40 }];
-  wsDetalle['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } }];
-  XLSX.utils.book_append_sheet(wb, wsDetalle, 'Detalle');
+  const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+  wsResumen['!cols'] = [{ wch: 35 }, { wch: 20 }, { wch: 15 }, { wch: 55 }];
+  wsResumen['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }
+  ];
 
-  // ── Hoja 2: Por Categoría ────────────────────
-  const porCategoria = new Map<string, number>();
-  datosReales.forEach(i => {
+  XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen Alenort');
+
+  // 2. DETALLE DE INGRESOS SHEET
+  const porCategoriaIngresos = new Map<string, number>();
+  ingresosReales.forEach(i => {
     const cat = i.categoria || 'Sin categoría';
-    porCategoria.set(cat, (porCategoria.get(cat) ?? 0) + Number(i.monto));
+    porCategoriaIngresos.set(cat, (porCategoriaIngresos.get(cat) ?? 0) + Number(i.monto));
   });
-  const catOrdenadas = [...porCategoria.entries()].sort((a, b) => b[1] - a[1]);
+  const catIngresosOrdenadas = [...porCategoriaIngresos.entries()].sort((a, b) => b[1] - a[1]);
 
-  const catData: (string | number)[][] = [
-    ['RESUMEN POR CATEGORÍA'],
-    [`Período: ${fmtFecha(desde)} al ${fmtFecha(hasta)}`],
+  const detalleIngresosData: any[][] = [
+    [makeCell('ALENORT — DETALLE DE INGRESOS', 'title')],
+    [makeCell(`Período: ${fmtFecha(desde)} al ${fmtFecha(hasta)}`, 'subtitle')],
     [],
-    ['CATEGORÍA', 'MONTO ($)', '% DEL TOTAL', 'REGISTROS'],
-    ...catOrdenadas.map(([cat, monto]) => {
-      const qty = datosReales.filter(i => (i.categoria || 'Sin categoría') === cat).length;
-      const pct = total > 0 ? ((monto / total) * 100).toFixed(2) + '%' : '0.00%';
-      return [cat, monto, pct, qty];
-    }),
+    [
+      makeCell('FECHA', 'header'),
+      makeCell('CATEGORÍA', 'header'),
+      makeCell('MONTO ($)', 'headerRight'),
+      makeCell('MÉTODO DE PAGO', 'header'),
+      makeCell('NOTAS', 'header')
+    ],
+    ...[...ingresos]
+      .sort((a, b) => a.fecha.localeCompare(b.fecha))
+      .map((i, idx) => {
+        const rowStyle = idx % 2 === 0 ? 'data' : 'dataEven';
+        const numStyle = idx % 2 === 0 ? 'dataRight' : 'dataRightEven';
+        return [
+          makeCell(fmtFecha(i.fecha), rowStyle),
+          makeCell(i.categoria === CATEGORIA_INICIO_DIA ? 'APERTURA (INICIO DEL DIA)' : (i.categoria || 'Sin categoría'), rowStyle),
+          makeCell(Number(i.monto), numStyle, '$#,##0'),
+          makeCell(i.metodo_pago || '', rowStyle),
+          makeCell(cleanNotas(i.notas), rowStyle)
+        ];
+      }),
     [],
-    ['TOTAL', total, '100%', datosReales.length],
+    [
+      makeCell('TOTAL REAL (Sin Apertura)', 'total'),
+      makeCell('', 'total'),
+      makeCell(totalIngresosReal, 'totalRight', '$#,##0'),
+      makeCell('', 'total'),
+      makeCell('', 'total')
+    ],
+    [
+      makeCell('TOTAL BRUTO', 'total'),
+      makeCell('', 'total'),
+      makeCell(totalIngresosBruto, 'totalRight', '$#,##0'),
+      makeCell('', 'total'),
+      makeCell('', 'total')
+    ],
+    [],
+    [],
+    [
+      makeCell('RESUMEN POR CATEGORÍA', 'header'),
+      makeCell('MONTO ($)', 'headerRight'),
+      makeCell('% DEL TOTAL', 'headerRight'),
+      makeCell('REGISTROS', 'headerRight'),
+      makeCell('', 'header')
+    ],
+    ...catIngresosOrdenadas.map(([cat, monto], idx) => {
+      const qty = ingresosReales.filter(i => (i.categoria || 'Sin categoría') === cat).length;
+      const rowStyle = idx % 2 === 0 ? 'data' : 'dataEven';
+      const numStyle = idx % 2 === 0 ? 'dataRight' : 'dataRightEven';
+      const pctVal = totalIngresosReal > 0 ? (monto / totalIngresosReal) : 0;
+      return [
+        makeCell(cat, rowStyle),
+        makeCell(monto, numStyle, '$#,##0'),
+        makeCell(pctVal, numStyle, '0.00%'),
+        makeCell(qty, numStyle, '0'),
+        makeCell('', rowStyle)
+      ];
+    })
   ];
 
-  const wsCat = XLSX.utils.aoa_to_sheet(catData);
-  wsCat['!cols'] = [{ wch: 38 }, { wch: 18 }, { wch: 14 }, { wch: 12 }];
-  wsCat['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }];
-  XLSX.utils.book_append_sheet(wb, wsCat, 'Por Categoría');
-
-  // ── Hoja 3: Por Método ───────────────────────
-  const porMetodo = new Map<string, number>();
-  datosReales.forEach(i => {
-    const m = i.metodo_pago || 'Sin método';
-    porMetodo.set(m, (porMetodo.get(m) ?? 0) + Number(i.monto));
-  });
-  const metOrdenados = [...porMetodo.entries()].sort((a, b) => b[1] - a[1]);
-
-  const metData: (string | number)[][] = [
-    ['RESUMEN POR MÉTODO DE PAGO'],
-    [`Período: ${fmtFecha(desde)} al ${fmtFecha(hasta)}`],
-    [],
-    ['MÉTODO DE PAGO', 'MONTO ($)', '% DEL TOTAL', 'REGISTROS'],
-    ...metOrdenados.map(([met, monto]) => {
-      const qty = datosReales.filter(i => (i.metodo_pago || 'Sin método') === met).length;
-      const pct = total > 0 ? ((monto / total) * 100).toFixed(2) + '%' : '0.00%';
-      return [met, monto, pct, qty];
-    }),
-    [],
-    ['TOTAL', total, '100%', datosReales.length],
+  const wsIngresos = XLSX.utils.aoa_to_sheet(detalleIngresosData);
+  wsIngresos['!cols'] = [{ wch: 14 }, { wch: 30 }, { wch: 18 }, { wch: 18 }, { wch: 50 }];
+  wsIngresos['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } }
   ];
 
-  const wsMet = XLSX.utils.aoa_to_sheet(metData);
-  wsMet['!cols'] = [{ wch: 22 }, { wch: 18 }, { wch: 14 }, { wch: 12 }];
-  wsMet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }];
-  XLSX.utils.book_append_sheet(wb, wsMet, 'Por Método');
+  wsIngresos['!autofilter'] = {
+    ref: `A4:E${4 + ingresosLen}`
+  };
+
+  XLSX.utils.book_append_sheet(wb, wsIngresos, 'Ingresos');
+
+  // 3. DETALLE DE EGRESOS SHEET
+  const porCategoriaGastos = new Map<string, number>();
+  gastos.forEach(i => {
+    const cat = i.categoria || 'Sin categoría';
+    porCategoriaGastos.set(cat, (porCategoriaGastos.get(cat) ?? 0) + Number(i.monto));
+  });
+  const catGastosOrdenadas = [...porCategoriaGastos.entries()].sort((a, b) => b[1] - a[1]);
+
+  const detalleGastosData: any[][] = [
+    [makeCell('ALENORT — DETALLE DE EGRESOS', 'title')],
+    [makeCell(`Período: ${fmtFecha(desde)} al ${fmtFecha(hasta)}`, 'subtitle')],
+    [],
+    [
+      makeCell('FECHA', 'header'),
+      makeCell('CATEGORÍA', 'header'),
+      makeCell('MONTO ($)', 'headerRight'),
+      makeCell('MÉTODO DE PAGO', 'header'),
+      makeCell('NOTAS', 'header')
+    ],
+    ...[...gastos]
+      .sort((a, b) => a.fecha.localeCompare(b.fecha))
+      .map((i, idx) => {
+        const rowStyle = idx % 2 === 0 ? 'data' : 'dataEven';
+        const numStyle = idx % 2 === 0 ? 'dataRight' : 'dataRightEven';
+        return [
+          makeCell(fmtFecha(i.fecha), rowStyle),
+          makeCell(i.categoria || 'Sin categoría', rowStyle),
+          makeCell(Number(i.monto), numStyle, '$#,##0'),
+          makeCell(i.metodo_pago || '', rowStyle),
+          makeCell(cleanNotas(i.notes || i.notas), rowStyle)
+        ];
+      }),
+    [],
+    [
+      makeCell('TOTAL EGRESOS', 'total'),
+      makeCell('', 'total'),
+      makeCell(totalGastos, 'totalRight', '$#,##0'),
+      makeCell('', 'total'),
+      makeCell('', 'total')
+    ],
+    [],
+    [],
+    [
+      makeCell('RESUMEN POR CATEGORÍA', 'header'),
+      makeCell('MONTO ($)', 'headerRight'),
+      makeCell('% DEL TOTAL', 'headerRight'),
+      makeCell('REGISTROS', 'headerRight'),
+      makeCell('', 'header')
+    ],
+    ...catGastosOrdenadas.map(([cat, monto], idx) => {
+      const qty = gastos.filter(i => (i.categoria || 'Sin categoría') === cat).length;
+      const rowStyle = idx % 2 === 0 ? 'data' : 'dataEven';
+      const numStyle = idx % 2 === 0 ? 'dataRight' : 'dataRightEven';
+      const pctVal = totalGastos > 0 ? (monto / totalGastos) : 0;
+      return [
+        makeCell(cat, rowStyle),
+        makeCell(monto, numStyle, '$#,##0'),
+        makeCell(pctVal, numStyle, '0.00%'),
+        makeCell(qty, numStyle, '0'),
+        makeCell('', rowStyle)
+      ];
+    })
+  ];
+
+  const wsEgresos = XLSX.utils.aoa_to_sheet(detalleGastosData);
+  wsEgresos['!cols'] = [{ wch: 14 }, { wch: 30 }, { wch: 18 }, { wch: 18 }, { wch: 50 }];
+  wsEgresos['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } }
+  ];
+
+  wsEgresos['!autofilter'] = {
+    ref: `A4:E${4 + gastosLen}`
+  };
+
+  XLSX.utils.book_append_sheet(wb, wsEgresos, 'Egresos');
 
   const blob = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  saveAs(new Blob([blob]), `Alenort_${tipo}_${desde}_al_${hasta}.xlsx`);
+  saveAs(new Blob([blob]), `Alenort_Consolidado_${desde}_al_${hasta}.xlsx`);
 }
 
 // ── COMPONENTE ────────────────────────────────────────────────────────────────
 
-export default function FiltroFechaExportar({ desde, hasta, setDesde, setHasta, datos, tipo }: Props) {
+export default function FiltroFechaExportar({ desde, hasta, setDesde, setHasta, ingresos, gastos, vistaActual }: Props) {
 
   const aplicarPreset = (preset: typeof PRESETS[0]) => {
     setDesde(preset.desde());
@@ -388,9 +763,13 @@ export default function FiltroFechaExportar({ desde, hasta, setDesde, setHasta, 
   const presetActivo = (preset: typeof PRESETS[0]) =>
     desde === preset.desde() && hasta === preset.hasta();
 
+  const esIngreso = vistaActual === 'gastos' ? false : true;
+  const activeDatos = esIngreso ? ingresos : gastos;
+  const activeTipo = esIngreso ? 'ingresos' : 'gastos';
+
   const abrirReporte = () => {
-    if (!datos.length) { alert('No hay datos para exportar.'); return; }
-    const html = generarReporteHTML(datos, tipo, desde, hasta);
+    if (!activeDatos.length) { alert('No hay datos para exportar.'); return; }
+    const html = generarReporteHTML(activeDatos, activeTipo, desde, hasta);
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const win = window.open(url, '_blank');
@@ -398,14 +777,16 @@ export default function FiltroFechaExportar({ desde, hasta, setDesde, setHasta, 
   };
 
   const exportarExcel = () => {
-    if (!datos.length) { alert('No hay datos para exportar.'); return; }
-    try { exportarExcelPro(datos, tipo, desde, hasta); }
+    if (!ingresos.length && !gastos.length) { alert('No hay datos para exportar.'); return; }
+    try { exportarExcelPro(ingresos, gastos, desde, hasta); }
     catch (err) { console.error(err); alert('Error al exportar.'); }
   };
 
-  const datosReales = tipo === 'ingresos' ? datos.filter(i => i.categoria !== CATEGORIA_INICIO_DIA) : datos;
-  const total = datosReales.reduce((s, i) => s + Number(i.monto), 0);
-  const totalBruto = datos.reduce((s, i) => s + Number(i.monto), 0);
+  const ingresosReales = ingresos.filter(i => i.categoria !== CATEGORIA_INICIO_DIA);
+  const totalIngresosReal = ingresosReales.reduce((s, i) => s + Number(i.monto), 0);
+  const totalIngresosBruto = ingresos.reduce((s, i) => s + Number(i.monto), 0);
+  const totalGastos = gastos.reduce((s, i) => s + Number(i.monto), 0);
+  const balanceNeto = totalIngresosReal - totalGastos;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
@@ -465,22 +846,21 @@ export default function FiltroFechaExportar({ desde, hasta, setDesde, setHasta, 
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap"
           >
             <Download size={15} />
-            Excel
+            Excel Unificado
           </button>
         </div>
       </div>
 
       {/* Resumen */}
-      {datos.length > 0 && (
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-500 border-t border-gray-100 pt-2">
-          <span>{datos.length} registros</span>
-          <span>Total bruto: <span className="text-gray-900 font-semibold">{fmtMoney(totalBruto)}</span></span>
-          {tipo === 'ingresos' && (
-            <span>Total real: <span className="text-emerald-600 font-semibold">{fmtMoney(total)}</span></span>
-          )}
-          {tipo === 'gastos' && (
-            <span>Total: <span className="text-red-600 font-semibold">{fmtMoney(total)}</span></span>
-          )}
+      {(ingresos.length > 0 || gastos.length > 0) && (
+        <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-gray-500 border-t border-gray-100 pt-2 font-medium">
+          <span>Ingresos Reales: <span className="text-emerald-600 font-bold">{fmtMoney(totalIngresosReal)}</span></span>
+          <span className="text-gray-300">|</span>
+          <span>Egresos Totales: <span className="text-red-600 font-bold">{fmtMoney(totalGastos)}</span></span>
+          <span className="text-gray-300">|</span>
+          <span>Balance Neto: <span className={`font-bold ${balanceNeto >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{fmtMoney(balanceNeto)}</span></span>
+          <span className="text-gray-300">|</span>
+          <span className="text-gray-400">Generado para la vista: <span className="font-semibold text-gray-600 uppercase">{vistaActual === 'gastos' ? 'Egresos' : vistaActual === 'ingresos' ? 'Ingresos' : 'Dashboard'}</span></span>
         </div>
       )}
     </div>

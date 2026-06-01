@@ -169,8 +169,9 @@ export default function DashboardPage() {
             hasta={hasta}
             setDesde={setDesde}
             setHasta={setHasta}
-            datos={vistaActual === 'gastos' ? gastos : ingresos}
-            tipo={vistaActual === 'gastos' ? 'gastos' : 'ingresos'}
+            ingresos={ingresos}
+            gastos={gastos}
+            vistaActual={vistaActual}
           />
         )}
 

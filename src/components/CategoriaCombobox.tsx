@@ -39,24 +39,45 @@ export default function CategoriaCombobox({
   const [search, setSearch] = useState('');
   const [cursor, setCursor] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const justClosedRef = useRef(false);
 
   const filtradas = search.trim()
     ? opciones.filter(o => o.toLowerCase().includes(search.toLowerCase()))
     : opciones;
 
+  const close = (restoreFocus = false) => {
+    setOpen(false);
+    setSearch('');
+    setCursor(-1);
+    justClosedRef.current = true;
+    setTimeout(() => {
+      justClosedRef.current = false;
+    }, 120);
+    if (restoreFocus) {
+      setTimeout(() => {
+        wrapperRef.current?.focus();
+      }, 0);
+    }
+  };
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch('');
-        setCursor(-1);
+        close(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    if (open) {
+      inputRef.current?.focus();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (cursor >= 0 && listRef.current) {
@@ -67,9 +88,7 @@ export default function CategoriaCombobox({
 
   const select = (v: string) => {
     onChange(v);
-    setOpen(false);
-    setSearch('');
-    setCursor(-1);
+    close(true);
   };
 
   const handleOpen = () => {
@@ -79,7 +98,6 @@ export default function CategoriaCombobox({
       const idx = opciones.indexOf(value);
       setCursor(idx >= 0 ? idx : -1);
     }
-    setTimeout(() => inputRef.current?.focus(), 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -93,22 +111,50 @@ export default function CategoriaCombobox({
       select(filtradas[cursor]);
       e.preventDefault();
     } else if (e.key === 'Escape') {
-      setOpen(false);
-      setSearch('');
-      setCursor(-1);
+      close(true);
     }
   };
+
+  const handleFocus = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (justClosedRef.current) return;
+    if (open) return;
+    if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+      handleOpen();
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (!open) return;
+    if (e.relatedTarget && !containerRef.current?.contains(e.relatedTarget as Node)) {
+      close(false);
+    }
+  };
+
+  const handleKeyDownDiv = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (open) return;
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+      handleOpen();
+      e.preventDefault();
+    }
+  };
+
+  const cleanRingColor = ringColor.replace('focus-within:', '').replace('focus-within:ring-emerald-500', 'ring-emerald-500');
 
   const borderCls = error
     ? 'border-red-400 ring-2 ring-red-300'
     : open
-    ? `border-gray-400 ring-2 ${ringColor}`
+    ? `border-gray-400 ring-2 ${cleanRingColor}`
     : 'border-gray-300 hover:border-gray-400';
 
   return (
     <div ref={containerRef} className="relative">
       <div
-        className={`flex items-center w-full px-3 py-3 bg-gray-50 border rounded-xl text-sm cursor-pointer transition-all ${borderCls}`}
+        ref={wrapperRef}
+        tabIndex={open ? -1 : 0}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDownDiv}
+        className={`flex items-center w-full px-3 py-3 bg-gray-50 border rounded-xl text-sm cursor-pointer transition-all ${borderCls} focus:outline-none focus:ring-2 focus:${cleanRingColor}`}
         onClick={handleOpen}
       >
         {open ? (
