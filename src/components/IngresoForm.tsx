@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import CategoriaCombobox from '@/components/CategoriaCombobox';
+import { useCategorias } from '@/hooks/useCategorias';
 import {
   AlertCircle, DollarSign, CheckCircle, ChevronDown, ChevronUp,
   X, Sun, Calculator,
@@ -10,32 +11,6 @@ import { format } from 'date-fns';
 
 const CATEGORIA_INICIO_DIA = 'INICIO DEL DIA';
 const UMBRAL_ALERTA = 500_000_000;
-
-const CATEGORIAS_INGRESOS = [
-  'INICIO DEL DIA',
-  'ANTICIPO DE CAJA COLON',
-  'ANTICIPO DE CAJA MAYORISTA',
-  'ANTICIPO DE CAJA MINORISTA',
-  'CAJA COLON TM',
-  'CAJA COLON TT',
-  'CAJA MAYORISTA TM',
-  'CAJA MAYORISTA TT',
-  'CAJA MINORISTA TM',
-  'CAJA MINORISTA TT',
-  'CHEQUES DE LEO FINANCISTA',
-  'CHEQUES FINANCIEROS',
-  'COBRANZAS',
-  'CUENTA GALICIA JULITO',
-  'CUENTA GALICIA ROCIO',
-  'CUENTA MERCADO PAGO',
-  'DEPOSITO EN CUENTA',
-  'ELI PERSONAL',
-  'INGRESOS EXTRAS',
-  'PRESTAMOS',
-  'REPARTO',
-  'SOBRANTES',
-  'TRANSFERENCIAS FINANCIERAS',
-];
 
 const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Depósito', 'Tarjeta', 'Cheque', 'eCheq'];
 
@@ -54,6 +29,11 @@ const fmt = (n: number) =>
   n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
+  const { nombres: categoriasIngreso } = useCategorias('ingreso');
+  const opcionesCategoria = categoriasIngreso.includes(CATEGORIA_INICIO_DIA)
+    ? categoriasIngreso
+    : [CATEGORIA_INICIO_DIA, ...categoriasIngreso];
+
   const [categoria, setCategoria] = useState('');
   const [metodoPago, setMetodoPago] = useState('');
   const [montoRaw, setMontoRaw] = useState('');
@@ -179,7 +159,7 @@ export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
           <CategoriaCombobox
             value={categoria}
             onChange={v => { setCategoria(v); setErrores(p => ({ ...p, categoria: '' })); }}
-            opciones={CATEGORIAS_INGRESOS}
+            opciones={opcionesCategoria}
             error={!!errores.categoria}
             ringColor="ring-emerald-500"
             selectedColor="bg-emerald-50 text-emerald-700"

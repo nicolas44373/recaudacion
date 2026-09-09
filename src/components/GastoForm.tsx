@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import CategoriaCombobox from '@/components/CategoriaCombobox';
+import { useCategorias } from '@/hooks/useCategorias';
 import {
   AlertCircle, CheckCircle, ChevronDown, ChevronUp,
   X, MinusCircle, Calculator,
@@ -9,36 +10,6 @@ import {
 import { format } from 'date-fns';
 
 const UMBRAL_ALERTA = 5_000_000;
-
-const GRUPOS_CATEGORIAS: Record<string, string[]> = {
-  'PERSONAL / SUELDOS': [
-    'SUELDOS FIJOS', 'SUELDOS TEMPORALES', 'HORAS EXTRA',
-    'ROCIO PERSONAL', 'JULITO PERSONAL', 'JULIO PERSONAL', 'ELI PERSONAL', 'LEO',
-    'GASTOS EMPLEADOS', 'COMISIONES DE VENTA',
-  ],
-  'OPERACIONES DIARIAS': [
-    'DESAYUNO', 'ALMUERZO', 'LIMPIEZA', 'BOLSAS', 'COMBUSTIBLE',
-    'TAXI/UBER', 'SUPER', 'LIBRERIA', 'MARKETING', 'SEGURIDAD',
-    'GASTOS EXTRA', 'PRODUCCION',
-  ],
-  'MANTENIMIENTO': [
-    'MANTENIMIENTO JURAMENTO', 'MANTENIMIENTO COLON',
-    'MANTENIMIENTO JUAN B JUSTO', 'MANTENIMIENTO DE VEHICULOS',
-    'CASA', 'ALQUILER',
-  ],
-  'FINANCIERO': [
-    'CUENTA GALICIA JULITO', 'CUENTA GALICIA ROCIO', 'CUENTA MERCADO PAGO',
-    'TRANSFERENCIAS FINANCIERAS', 'CHEQUES FINANCIEROS', 'CHEQUES DE LEO FINANCISTA',
-    'COSTOS FINANCIEROS', 'PAGO TARJETA', 'TARJETA', 'DEPOSITO EN CUENTA', 'FINANCIERA',
-  ],
-  'OBLIGACIONES': [
-    'IMPUESTOS', 'MUNICIPALES', 'SERVICIOS', 'HONORARIOS',
-    'ALQUILER', 'PUERTOS DE FRIO',
-  ],
-  'PROVEEDORES': [
-    'PAGO PROVEEDORES', 'FALTANTES',
-  ],
-};
 
 const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Depósito', 'Tarjeta', 'Cheque', 'eCheq'];
 
@@ -57,6 +28,8 @@ const fmt = (n: number) =>
   n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
+  const { nombres: categoriasGasto } = useCategorias('gasto');
+
   const [categoria, setCategoria] = useState('');
   const [metodoPago, setMetodoPago] = useState('');
   const [montoRaw, setMontoRaw] = useState('');
@@ -173,7 +146,7 @@ export default function GastoForm({ onSuccess }: { onSuccess: () => void }) {
           <CategoriaCombobox
             value={categoria}
             onChange={v => { setCategoria(v); setErrores(p => ({ ...p, categoria: '' })); }}
-            opciones={Object.values(GRUPOS_CATEGORIAS).flat()}
+            opciones={categoriasGasto}
             error={!!errores.categoria}
             ringColor="ring-red-500"
             selectedColor="bg-red-50 text-red-700"

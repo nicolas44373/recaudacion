@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { AlertCircle, CheckCircle, X, Printer, Receipt, FileText, Trash2 } from 'lucide-react';
 import CategoriaCombobox from '@/components/CategoriaCombobox';
+import { useCategorias } from '@/hooks/useCategorias';
 
 const DENOMINACIONES = [
   { valor: 100,   label: '$100',    color: 'text-red-600'     },
@@ -14,20 +15,6 @@ const DENOMINACIONES = [
   { valor: 10000, label: '$10.000', color: 'text-teal-600'    },
   { valor: 20000, label: '$20.000', color: 'text-pink-600'    },
 ] as const;
-
-const CATEGORIAS_GASTOS = [
-  'SUELDOS FIJOS', 'SUELDOS TEMPORALES', 'HORAS EXTRA', 'COMISIONES DE VENTA',
-  'GASTOS EMPLEADOS', 'ROCIO PERSONAL', 'JULITO PERSONAL', 'JULIO PERSONAL', 'ELI PERSONAL', 'LEO',
-  'DESAYUNO', 'ALMUERZO', 'LIMPIEZA', 'BOLSAS', 'COMBUSTIBLE', 'TAXI/UBER', 'SUPER', 'LIBRERIA',
-  'MARKETING', 'SEGURIDAD', 'GASTOS EXTRA', 'PRODUCCION',
-  'MANTENIMIENTO JURAMENTO', 'MANTENIMIENTO COLON', 'MANTENIMIENTO JUAN B JUSTO',
-  'MANTENIMIENTO DE VEHICULOS', 'CASA', 'ALQUILER',
-  'CUENTA GALICIA JULITO', 'CUENTA GALICIA ROCIO', 'CUENTA MERCADO PAGO',
-  'TRANSFERENCIAS FINANCIERAS', 'CHEQUES FINANCIEROS', 'CHEQUES DE LEO FINANCISTA',
-  'COSTOS FINANCIEROS', 'PAGO TARJETA', 'TARJETA', 'DEPOSITO EN CUENTA', 'FINANCIERA',
-  'IMPUESTOS', 'MUNICIPALES', 'SERVICIOS', 'HONORARIOS', 'PUERTOS DE FRIO',
-  'PAGO PROVEEDORES', 'FALTANTES',
-];
 
 const PAGO_MARKER = '[PAGO]';
 
@@ -251,6 +238,7 @@ function abrirVentanaImpresion(html: string) {
 }
 
 export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) {
+  const { nombres: categoriasGasto } = useCategorias('gasto');
   const [receptor, setReceptor] = useState('');
   const [responsable, setResponsable] = useState('');
   const [categoria, setCategoria] = useState('');
@@ -495,7 +483,7 @@ export default function SistemaPagos({ onRefresh }: { onRefresh?: () => void }) 
               <CategoriaCombobox
                 value={categoria}
                 onChange={v => { setCategoria(v); setErrores(p => ({ ...p, categoria: '' })); }}
-                opciones={CATEGORIAS_GASTOS}
+                opciones={categoriasGasto}
                 error={!!errores.categoria}
                 ringColor="ring-violet-500"
                 selectedColor="bg-violet-50 text-violet-700"

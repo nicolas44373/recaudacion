@@ -18,6 +18,7 @@ import RecordatoriosPage from '@/components/recordatorio';
 import NotificacionesRecordatorios from '@/components/NotificacionesRecordatorios';
 import ContadorBilletes from '@/components/ContadorBilletes';
 import SistemaPagos from '@/components/SistemaPagos';
+import Configuracion from '@/components/Configuracion';
 import {
   prepararDatosPorCaja,
   prepararDatosPorMes,
@@ -27,7 +28,7 @@ import {
 const CATEGORIA_INICIO_DIA = 'INICIO DEL DIA';
 
 export default function DashboardPage() {
-  const [vistaActual, setVistaActual] = useState<'dashboard' | 'contador' | 'ingresos' | 'formulario' | 'gastos' | 'nuevo-gasto' | 'recordatorios' | 'pagos'>('dashboard');
+  const [vistaActual, setVistaActual] = useState<'dashboard' | 'contador' | 'ingresos' | 'formulario' | 'gastos' | 'nuevo-gasto' | 'recordatorios' | 'pagos' | 'configuracion'>('dashboard');
   const [desde, setDesde] = useState(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [hasta, setHasta] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [ingresos, setIngresos] = useState<any[]>([]);
@@ -199,6 +200,7 @@ export default function DashboardPage() {
         {vistaActual === 'contador' && <ContadorBilletes netoEfectivo={estadisticas.dineroHoy} />}
         {vistaActual === 'recordatorios' && <RecordatoriosPage />}
         {vistaActual === 'pagos' && <SistemaPagos onRefresh={refresh} />}
+        {vistaActual === 'configuracion' && <Configuracion />}
       </div>
     </main>
   );

@@ -1,10 +1,10 @@
 'use client';
 import {
   LayoutDashboard, TrendingUp, TrendingDown,
-  PlusCircle, MinusCircle, Bell, DollarSign, Banknote, Receipt,
+  PlusCircle, MinusCircle, Bell, DollarSign, Banknote, Receipt, Settings,
 } from 'lucide-react';
 
-type Vista = 'dashboard' | 'contador' | 'ingresos' | 'formulario' | 'gastos' | 'nuevo-gasto' | 'recordatorios' | 'pagos';
+type Vista = 'dashboard' | 'contador' | 'ingresos' | 'formulario' | 'gastos' | 'nuevo-gasto' | 'recordatorios' | 'pagos' | 'configuracion';
 
 interface NavItem {
   vista: Vista;
@@ -79,6 +79,14 @@ const NAV_ITEMS: NavItem[] = [
     icon: Receipt,
     color: 'text-violet-500',
     activeClass: 'bg-violet-600 text-white border-violet-500',
+  },
+  {
+    vista: 'configuracion',
+    label: 'Configuración',
+    labelShort: 'Config',
+    icon: Settings,
+    color: 'text-gray-500',
+    activeClass: 'bg-gray-800 text-white border-gray-700',
   },
 ];
 
