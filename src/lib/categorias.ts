@@ -1,5 +1,5 @@
-// Categorías por defecto. Se usan como respaldo cuando la tabla `categorias`
-// de Supabase está vacía o no se puede leer.
+// Tipos de categoría. Las categorías viven exclusivamente en la tabla
+// `categorias` de Supabase y se administran desde el apartado "Configuración".
 
 export type TipoCategoria = 'ingreso' | 'gasto';
 
@@ -8,48 +8,4 @@ export interface Categoria {
   nombre: string;
   tipo: TipoCategoria;
   orden: number;
-}
-
-export const CATEGORIAS_INGRESOS_DEFAULT: string[] = [
-  'INICIO DEL DIA',
-  'ANTICIPO DE CAJA COLON',
-  'ANTICIPO DE CAJA MAYORISTA',
-  'ANTICIPO DE CAJA MINORISTA',
-  'CAJA COLON TM',
-  'CAJA COLON TT',
-  'CAJA MAYORISTA TM',
-  'CAJA MAYORISTA TT',
-  'CAJA MINORISTA TM',
-  'CAJA MINORISTA TT',
-  'CHEQUES DE LEO FINANCISTA',
-  'CHEQUES FINANCIEROS',
-  'COBRANZAS',
-  'CUENTA GALICIA JULITO',
-  'CUENTA GALICIA ROCIO',
-  'CUENTA MERCADO PAGO',
-  'DEPOSITO EN CUENTA',
-  'ELI PERSONAL',
-  'INGRESOS EXTRAS',
-  'PRESTAMOS',
-  'REPARTO',
-  'SOBRANTES',
-  'TRANSFERENCIAS FINANCIERAS',
-];
-
-export const CATEGORIAS_GASTOS_DEFAULT: string[] = [
-  'SUELDOS FIJOS', 'SUELDOS TEMPORALES', 'HORAS EXTRA', 'COMISIONES DE VENTA',
-  'GASTOS EMPLEADOS', 'ROCIO PERSONAL', 'JULITO PERSONAL', 'JULIO PERSONAL', 'ELI PERSONAL', 'LEO',
-  'DESAYUNO', 'ALMUERZO', 'LIMPIEZA', 'BOLSAS', 'COMBUSTIBLE', 'TAXI/UBER', 'SUPER', 'LIBRERIA',
-  'MARKETING', 'SEGURIDAD', 'GASTOS EXTRA', 'PRODUCCION',
-  'MANTENIMIENTO JURAMENTO', 'MANTENIMIENTO COLON', 'MANTENIMIENTO JUAN B JUSTO',
-  'MANTENIMIENTO DE VEHICULOS', 'CASA', 'ALQUILER',
-  'CUENTA GALICIA JULITO', 'CUENTA GALICIA ROCIO', 'CUENTA MERCADO PAGO',
-  'TRANSFERENCIAS FINANCIERAS', 'CHEQUES FINANCIEROS', 'CHEQUES DE LEO FINANCISTA',
-  'COSTOS FINANCIEROS', 'PAGO TARJETA', 'TARJETA', 'DEPOSITO EN CUENTA', 'FINANCIERA',
-  'IMPUESTOS', 'MUNICIPALES', 'SERVICIOS', 'HONORARIOS', 'PUERTOS DE FRIO',
-  'PAGO PROVEEDORES', 'FALTANTES',
-];
-
-export function categoriasDefault(tipo: TipoCategoria): string[] {
-  return tipo === 'ingreso' ? CATEGORIAS_INGRESOS_DEFAULT : CATEGORIAS_GASTOS_DEFAULT;
 }

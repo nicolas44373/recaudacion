@@ -2,14 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import {
-  Categoria,
-  TipoCategoria,
-  categoriasDefault,
-} from '@/lib/categorias';
+import { Categoria, TipoCategoria } from '@/lib/categorias';
 import {
   AlertCircle, CheckCircle, X, Plus, Pencil, Trash2,
-  Check, Settings, TrendingUp, TrendingDown, Download,
+  Check, Settings, TrendingUp, TrendingDown,
 } from 'lucide-react';
 
 const TABS: { tipo: TipoCategoria; label: string; icon: React.ElementType; accent: string; ring: string; btn: string }[] = [
@@ -114,28 +110,6 @@ export default function Configuracion() {
     }
   };
 
-  const importarDefault = async () => {
-    const faltantes = categoriasDefault(tipo).filter(
-      n => !nombresActuales.has(n.toUpperCase()),
-    );
-    if (faltantes.length === 0) {
-      showToast('ok', 'No hay categorías nuevas para importar');
-      return;
-    }
-    if (!confirm(`Se agregarán ${faltantes.length} categorías predefinidas. ¿Continuar?`)) return;
-    setOcupado(true);
-    const base = categorias.length ? Math.max(...categorias.map(c => c.orden)) + 1 : 0;
-    const filas = faltantes.map((nombre, i) => ({ nombre, tipo, orden: base + i }));
-    const { error } = await supabase.from('categorias').insert(filas);
-    setOcupado(false);
-    if (error) {
-      showToast('err', `Error al importar: ${error.message}`);
-    } else {
-      showToast('ok', `${faltantes.length} categorías importadas`);
-      cargar();
-    }
-  };
-
   return (
     <div className="max-w-3xl mx-auto space-y-4 pb-8">
       {toast && (
@@ -204,32 +178,14 @@ export default function Configuracion() {
         {cargando ? (
           <p className="text-center py-10 text-gray-400 text-sm">Cargando categorías...</p>
         ) : categorias.length === 0 ? (
-          <div className="text-center py-10 space-y-3">
-            <p className="text-gray-400 text-sm">No hay categorías cargadas todavía.</p>
-            <button
-              onClick={importarDefault}
-              disabled={ocupado}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
-            >
-              <Download size={15} />
-              Importar categorías predefinidas
-            </button>
-          </div>
+          <p className="text-center py-10 text-gray-400 text-sm">
+            No hay categorías cargadas todavía. Agregá la primera arriba.
+          </p>
         ) : (
           <>
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                {categorias.length} categoría{categorias.length !== 1 ? 's' : ''}
-              </p>
-              <button
-                onClick={importarDefault}
-                disabled={ocupado}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-50"
-              >
-                <Download size={13} />
-                Importar predefinidas
-              </button>
-            </div>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              {categorias.length} categoría{categorias.length !== 1 ? 's' : ''}
+            </p>
             <ul className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
               {categorias.map(cat => {
                 const enEdicion = editId === cat.id;

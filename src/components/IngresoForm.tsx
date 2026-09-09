@@ -29,10 +29,7 @@ const fmt = (n: number) =>
   n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 export default function IngresoForm({ onSuccess }: { onSuccess: () => void }) {
-  const { nombres: categoriasIngreso } = useCategorias('ingreso');
-  const opcionesCategoria = categoriasIngreso.includes(CATEGORIA_INICIO_DIA)
-    ? categoriasIngreso
-    : [CATEGORIA_INICIO_DIA, ...categoriasIngreso];
+  const { nombres: opcionesCategoria } = useCategorias('ingreso');
 
   const [categoria, setCategoria] = useState('');
   const [metodoPago, setMetodoPago] = useState('');

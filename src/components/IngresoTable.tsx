@@ -4,17 +4,10 @@ import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { AlertCircle, Edit, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useCategorias } from '@/hooks/useCategorias';
 
 const CATEGORIA_INICIO_DIA = 'INICIO DEL DIA';
 const UMBRAL_ALERTA = 50_000_000;
-
-const CATEGORIAS_INGRESOS = [
-  'INICIO DEL DIA', 'CAJA MAYORISTA TM', 'CAJA MAYORISTA TT', 'CAJA MINORISTA TM', 'CAJA MINORISTA TT',
-  'CAJA COLON TM', 'CAJA COLON TT', 'CUENTA GALICIA JULITO', 'CUENTA GALICIA ROCIO', 'CUENTA MERCADO PAGO',
-  'ANTICIPO DE CAJA MAYORISTA', 'ANTICIPO DE CAJA MINORISTA', 'ANTICIPO DE CAJA COLON', 'COBRANZAS', 'REPARTO',
-  'TRANSFERENCIAS FINANCIERAS', 'CHEQUES FINANCIEROS', 'CHEQUES DE LEO FINANCISTA', 'ELI PERSONAL',
-  'DEPOSITO EN CUENTA', 'SOBRANTES', 'PRESTAMOS', 'INGRESOS EXTRAS',
-];
 
 const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Depósito', 'Tarjeta', 'Cheque', 'eCheq'];
 
@@ -46,6 +39,7 @@ const colorMetodo = (metodo: string) => {
 };
 
 export default function IngresoTable({ ingresos, onRefresh }: Props) {
+  const { nombres: CATEGORIAS_INGRESOS } = useCategorias('ingreso');
   const [categoriaFiltro, setCategoriaFiltro] = useState('');
   const [metodoPagoFiltro, setMetodoPagoFiltro] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);

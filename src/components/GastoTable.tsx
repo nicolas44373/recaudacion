@@ -4,19 +4,9 @@ import { useState } from 'react';
 import { AlertCircle, Edit, Trash2, Save, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
+import { useCategorias } from '@/hooks/useCategorias';
 
 const UMBRAL_ALERTA = 5_000_000;
-
-const CATEGORIAS_GASTOS = [
-  'CUENTA GALICIA JULITO', 'CUENTA GALICIA ROCIO', 'CUENTA MERCADO PAGO', 'TRANSFERENCIAS FINANCIERAS',
-  'CHEQUES FINANCIEROS', 'CHEQUES DE LEO FINANCISTA', 'SUELDOS FIJOS', 'SUELDOS TEMPORALES',
-  'LIMPIEZA', 'BOLSAS', 'DESAYUNO', 'COMBUSTIBLE', 'ROCIO PERSONAL', 'JULITO PERSONAL', 'JULIO PERSONAL',
-  'ELI PERSONAL', 'CASA', 'MARKETING', 'SEGURIDAD', 'ALMUERZO', 'LIBRERIA', 'HORAS EXTRA', 'GASTOS EXTRA',
-  'TAXI/UBER', 'SUPER', 'SERVICIOS', 'PAGO TARJETA', 'PAGO PROVEEDORES', 'MUNICIPALES',
-  'MANTENIMIENTO JURAMENTO', 'MANTENIMIENTO COLON', 'MANTENIMIENTO JUAN B JUSTO', 'MANTENIMIENTO DE VEHICULOS',
-  'ALQUILER', 'IMPUESTOS', 'COSTOS FINANCIEROS', 'TARJETA', 'PUERTOS DE FRIO', 'LEO', 'FINANCIERA',
-  'DEPOSITO EN CUENTA', 'HONORARIOS', 'GASTOS EMPLEADOS', 'PRODUCCION', 'FALTANTES', 'COMISIONES DE VENTA',
-];
 
 const METODOS_PAGO = ['Efectivo', 'Transferencia', 'Depósito', 'Tarjeta', 'Cheque', 'eCheq'];
 
@@ -79,6 +69,7 @@ const formatNotas = (notas: string | null) => {
 };
 
 export default function GastoTable({ gastos, onRefresh }: Props) {
+  const { nombres: CATEGORIAS_GASTOS } = useCategorias('gasto');
   const [categoriaFiltro, setCategoriaFiltro] = useState('');
   const [metodoPagoFiltro, setMetodoPagoFiltro] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
